@@ -1,4 +1,4 @@
-# Carrots
+# 🥕 Carrots
 
 > 🪳 Not ready yet, working on bugs.
 
