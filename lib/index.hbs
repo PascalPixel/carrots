@@ -9,17 +9,13 @@
     <style>
       body {
         box-sizing: border-box;
-        padding: 20px;
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont,
-        "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
-        "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-        background: black;
-        color: white;
+        margin: 1rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+        background: white;
+        color: black;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
-        height: 100vh;
       }
 
       #wrap {
@@ -29,15 +25,15 @@
       }
 
       main {
-        width: 500px;
+        width: 30rem;
         margin: 0 auto;
       }
 
       header {
         display: flex;
         align-items: center;
-        font-size: 24px;
-        margin-bottom: 40px;
+        font-size: 1.5rem;
+        margin-bottom: 2.5rem;
       }
 
       #release {
@@ -50,20 +46,20 @@
 
       #date {
         color: gray;
-        font-size: 18px;
       }
 
       .item {
         display: flex;
-        align-items: center;
+        align-items: end;
+        justify-content: space-between;
       }
 
       .item:not(:last-of-type) {
-        margin-bottom: 14px;
+        margin-bottom: 1rem;
       }
 
       .item a {
-        color: #ff0387;
+        color: #ff6600;
         text-decoration: none;
       }
 
@@ -72,8 +68,12 @@
       }
 
       .fileType {
-       font-weight: 600;
-       flex-grow: 1;
+        font-weight: 600;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: space-between;
       }
 
       .url {
@@ -92,7 +92,7 @@
       }
 
       footer > * {
-        margin-top: 40px;
+        margin-top: 2.5rem;
       }
 
       footer a {
@@ -105,10 +105,11 @@
       }
 
       #version {
-        margin-right: 8px;
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: linear-gradient(#ff00a5, #f65538)
+        margin-right: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        background: black;
+        color: white;
       }
 
       #release-notes {
@@ -120,6 +121,7 @@
         text-align: center;
         flex-grow: 1;
       }
+
     </style>
   </head>
 
@@ -134,7 +136,12 @@
           <div id="list">
             {{#each files}}
               <div class="item">
-                <div class="fileType">{{@key}}: <span class="url"><a href={{this.url}}>/latest/{{@key}}</a></span></div>
+                <div class="fileType">
+                  <div>{{this.platform}}</div>
+                  <div class="url">
+                    <a href={{this.url}}>{{this.filename}}</a>
+                  </div>
+                </div>
                 <div class="size">{{this.size}} MB</div>
               </div>
             {{/each}}

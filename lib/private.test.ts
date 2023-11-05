@@ -12,12 +12,9 @@ let currentVersion: string;
 
 beforeAll(async () => {
   const listener = await carrots({
-    interval: process.env.INTERVAL,
     account: process.env.ACCOUNT,
     repository: process.env.REPOSITORY,
-    pre: process.env.PRE,
     token: process.env.TOKEN,
-    url: process.env.VERCEL_URL || process.env.URL,
   });
   server = http.createServer(listener);
   address = await listen(server);

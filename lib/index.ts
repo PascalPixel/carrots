@@ -48,6 +48,47 @@ enum Platform {
   SNAP_X64 = "snap-x64",
 }
 
+interface FileDetail {
+  key: string;
+  url: string;
+  size: number;
+  filename: string;
+  platform: string;
+}
+
+interface TemplateVariables {
+  account: string;
+  repository: string;
+  date: string;
+  files: Record<string, FileDetail>;
+  version: string;
+  releaseNotes: string;
+  allReleases: string;
+  github: string;
+}
+
+function platformToHumanName(platform: Platform): string {
+  if (platform === Platform.DARWIN_ARM64) return "macOS Apple Silicon";
+  if (platform === Platform.DARWIN_X64) return "macOS Intel";
+  if (platform === Platform.DMG_ARM64) return "macOS Apple Silicon";
+  if (platform === Platform.DMG_X64) return "macOS Intel";
+
+  if (platform === Platform.WIN32_ARM64) return "Windows aarch64";
+  if (platform === Platform.WIN32_IA32) return "Windows 32-bit";
+  if (platform === Platform.WIN32_X64) return "Windows 64-bit";
+  if (platform === Platform.NUPKG) return "Windows Update";
+
+  if (platform === Platform.APPIMAGE_ARM64) return "Linux aarch64";
+  if (platform === Platform.APPIMAGE_X64) return "Linux x86_64";
+  if (platform === Platform.DEBIAN_ARM64) return "Linux aarch64";
+  if (platform === Platform.DEBIAN_X64) return "Linux x86_64";
+  if (platform === Platform.REDHAT_ARM64) return "Linux aarch64";
+  if (platform === Platform.REDHAT_X64) return "Linux x86_64";
+  if (platform === Platform.SNAP_ARM64) return "Linux aarch64";
+  if (platform === Platform.SNAP_X64) return "Linux x86_64";
+  return "";
+}
+
 function requestToPlatform(platformRaw: string): Platform | null {
   const platform = platformRaw.toLowerCase().replace(/_/g, "-");
   if (platform === "appimage-arm64") return Platform.APPIMAGE_ARM64;
@@ -300,18 +341,32 @@ async function carrots(config: Config) {
     const filepath = path.join(process.cwd(), "lib", "index.hbs");
     const filecontent = await fs.readFile(filepath, "utf8");
     const template = Handlebars.compile(filecontent);
-    const html = template({
-      account: config.account,
-      repository: config.repository,
+    const files: Record<string, FileDetail> = {};
+    for (const platform of platforms) {
+      const asset = latest.get(platform);
+      if (asset) {
+        files[platform] = {
+          key: platform,
+          url: asset.url,
+          size: asset.size,
+          filename: asset.url.split("/").pop() || "",
+          platform: platformToHumanName(platform),
+        };
+      }
+    }
+    const variables: TemplateVariables = {
+      account: config.account || "",
+      repository: config.repository || "",
       date: date
         ? formatDistanceToNow(new Date(date), { addSuffix: true })
         : "",
-      files: platforms,
-      version: version,
+      files,
+      version: version || "",
       releaseNotes: `https://github.com/${config.account}/${config.repository}/releases/tag/${version}`,
       allReleases: `https://github.com/${config.account}/${config.repository}/releases`,
       github: `https://github.com/${config.account}/${config.repository}`,
-    });
+    };
+    const html = template(variables);
 
     // Send response
     res.statusCode = 200;
