@@ -354,13 +354,21 @@ async function carrots(config: Config) {
         };
       }
     }
+    const sortedFiles: Record<string, FileDetail> = {};
+    Object.keys(files)
+      .sort((a, b) => {
+        return files[a].platform.localeCompare(files[b].platform);
+      })
+      .forEach((key) => {
+        sortedFiles[key] = files[key];
+      });
     const variables: TemplateVariables = {
       account: config.account || "",
       repository: config.repository || "",
       date: date
         ? formatDistanceToNow(new Date(date), { addSuffix: true })
         : "",
-      files,
+      files: sortedFiles,
       version: version || "",
       releaseNotes: `https://github.com/${config.account}/${config.repository}/releases/tag/${version}`,
       allReleases: `https://github.com/${config.account}/${config.repository}/releases`,
