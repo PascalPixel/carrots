@@ -122,32 +122,69 @@ describe("download", () => {
 });
 
 describe("update", () => {
-  it("should give update for an old version of windows x64", async () => {
+  it("should give nupkg info for an old version of windows x64", async () => {
     const res = await fetch(`${address}update/win32/0.57.0/RELEASES`);
     expect(res.status).toEqual(200);
     const text = await res.text();
-    expect(text).toContain(".nupkg");
-    expect(text).toContain(currentVersion);
+    expect(text).toContain(
+      ` ${address}download/nupkg/horse-${currentVersion}-full.nupkg `
+    );
+  });
+
+  it("should give update download for an old version of windows x64", async () => {
+    const res = await fetch(
+      `${address}download/nupkg/horse-${currentVersion}-full.nupkg`
+    );
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `attachment; filename=horse-${currentVersion}-full.nupkg`
+    );
   });
 
   it("should give update for an old version of windows x64", async () => {
-    const res = await fetch(`${address}update/win32/0.57.0/releases`);
+    const res = await fetch(`${address}update/win32/0.57.0`);
     expect(res.status).toEqual(200);
-    const text = await res.text();
-    expect(text).toContain(".nupkg");
-    expect(text).toContain(currentVersion);
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/win32`);
   });
 
   it("should give update for an old version of mac arm", async () => {
     const res = await fetch(`${address}update/darwin_arm64/0.57.0`);
     expect(res.status).toEqual(200);
-    expect(res.headers.get("content-type")).toBe("application/octet-stream");
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/darwin_arm64`);
+  });
+
+  it("should give update for an old version of mac arm", async () => {
+    const res = await fetch(`${address}download/darwin_arm64`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`
+    );
   });
 
   it("should give update for an old version mac x64", async () => {
     const res = await fetch(`${address}update/darwin/0.57.0`);
     expect(res.status).toEqual(200);
-    expect(res.headers.get("content-type")).toBe("application/octet-stream");
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/darwin`);
+  });
+
+  it("should give update for an old version mac x64", async () => {
+    const res = await fetch(`${address}download/darwin`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`
+    );
   });
 });
 

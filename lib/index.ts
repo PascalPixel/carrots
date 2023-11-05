@@ -43,6 +43,7 @@ enum Platform {
   WIN32_ARM64 = "win32-arm64",
   WIN32_IA32 = "win32-ia32",
   WIN32_X64 = "win32-x64",
+  NUPKG = "nupkg",
   SNAP_ARM64 = "snap-arm64",
   SNAP_X64 = "snap-x64",
 }
@@ -74,6 +75,7 @@ function requestToPlatform(platformRaw: string): Platform | null {
   if (platform === "snap-arm64") return Platform.SNAP_ARM64;
   if (platform === "snap") return Platform.SNAP_X64;
   if (platform === "linux") return Platform.SNAP_X64;
+  if (platform === "nupkg") return Platform.NUPKG;
   return null;
 }
 
@@ -124,6 +126,10 @@ const filenameToPlatform = (fileName: string): Platform | null => {
 
   if (lowerFileName.includes("win32-arm64")) {
     return Platform.WIN32_ARM64;
+  }
+
+  if (lowerFileName.endsWith(".nupkg")) {
+    return Platform.NUPKG;
   }
 
   if (lowerFileName.endsWith(".deb") || lowerFileName.endsWith(".rpm")) {
@@ -315,7 +321,7 @@ async function carrots(config: Config) {
   });
 
   // Redirect to download latest release
-  router.get("/download/:platform", async (req, res, params) => {
+  router.get("/download/:platform/:file?", async (req, res, params) => {
     const { latest, platforms, version, date } = await updateCache(res);
     if (!latest) {
       res.statusCode = 500;
@@ -367,6 +373,15 @@ async function carrots(config: Config) {
       res.end("Failed to fetch latest releases");
       return;
     }
+
+    // Address
+    const address = `${
+      req.headers.protocol ||
+      req.headers.host?.includes("localhost") ||
+      req.headers.host?.includes("[::]")
+        ? "http"
+        : "https"
+    }://${req.headers.host || ""}/`;
 
     // Parse platform
     if (!params.platform) {
@@ -421,27 +436,32 @@ async function carrots(config: Config) {
         return;
       }
 
+      const patchedReleases = asset.RELEASES.replace(
+        /([A-Fa-f0-9]+)\s([^\s]+\.nupkg)\s(\d+)/g,
+        `$1 ${address}download/nupkg/$2 $3`
+      );
+
       res.statusCode = 200;
       res.setHeader(
         "content-length",
-        Buffer.byteLength(asset.RELEASES, "utf8")
+        Buffer.byteLength(patchedReleases, "utf8")
       );
       res.setHeader("content-type", "application/octet-stream");
-      res.end(asset.RELEASES);
+      res.end(patchedReleases);
       return;
     }
 
     // Proxy the update
-    const assetRes = await fetch(asset.api_url, {
-      headers: {
-        Accept: "application/octet-stream",
-        ...(config.token ? { Authorization: `Bearer ${config.token}` } : {}),
-      },
-      redirect: "manual",
-    });
-    res.statusCode = 302;
-    res.setHeader("Location", assetRes.headers.get("Location") || "");
-    res.end();
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(
+      JSON.stringify({
+        url: `${address}download/${params.platform}`,
+        name: asset.version,
+        notes: asset.notes,
+        pub_date: asset.date,
+      })
+    );
     return;
   });
 

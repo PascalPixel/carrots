@@ -146,13 +146,21 @@ describe("update", () => {
   it("should give update for an old version of mac arm", async () => {
     const res = await fetch(`${address}update/darwin_arm64/0.57.0`);
     expect(res.status).toEqual(200);
-    expect(res.headers.get("content-type")).toBe("application/octet-stream");
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/darwin_arm64`);
   });
 
   it("should give update for an old version mac x64", async () => {
     const res = await fetch(`${address}update/darwin/0.57.0`);
     expect(res.status).toEqual(200);
-    expect(res.headers.get("content-type")).toBe("application/octet-stream");
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/darwin`);
   });
 });
 
@@ -162,7 +170,7 @@ describe("latest", () => {
     expect(res.status).toEqual(204);
   });
 
-  it("should give update for up-to-date mac x64", async () => {
+  it("should not give update for up-to-date mac x64", async () => {
     const res = await fetch(`${address}update/darwin/${currentVersion}`);
     expect(res.status).toEqual(204);
   });
