@@ -65,7 +65,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/exe`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse-${currentVersion}-win32-x64-setup.exe`
+      `attachment; filename=horse-${currentVersion}-win32-x64-setup.exe`,
     );
   });
 
@@ -73,7 +73,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/darwin_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`
+      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`,
     );
   });
 
@@ -81,7 +81,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/darwin`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`
+      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`,
     );
   });
 
@@ -89,7 +89,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/deb_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse_${currentVersion}_arm64.deb`
+      `attachment; filename=horse_${currentVersion}_arm64.deb`,
     );
   });
 
@@ -97,7 +97,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/deb`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse_${currentVersion}_amd64.deb`
+      `attachment; filename=horse_${currentVersion}_amd64.deb`,
     );
   });
 
@@ -105,7 +105,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/rpm_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse-${currentVersion}-1.arm64.rpm`
+      `attachment; filename=horse-${currentVersion}-1.arm64.rpm`,
     );
   });
 
@@ -113,7 +113,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/rpm`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse-${currentVersion}-1.x86_64.rpm`
+      `attachment; filename=horse-${currentVersion}-1.x86_64.rpm`,
     );
   });
 });
@@ -124,17 +124,17 @@ describe("update", () => {
     expect(res.status).toEqual(200);
     const text = await res.text();
     expect(text).toContain(
-      ` ${address}download/nupkg/horse-${currentVersion}-full.nupkg `
+      ` ${address}download/nupkg/horse-${currentVersion}-full.nupkg `,
     );
   });
 
   it("should give update download for an old version of windows x64", async () => {
     const res = await fetch(
-      `${address}download/nupkg/horse-${currentVersion}-full.nupkg`
+      `${address}download/nupkg/horse-${currentVersion}-full.nupkg`,
     );
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse-${currentVersion}-full.nupkg`
+      `attachment; filename=horse-${currentVersion}-full.nupkg`,
     );
   });
 
@@ -142,7 +142,7 @@ describe("update", () => {
     const res = await fetch(`${address}update/win32/0.57.0`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8"
+      "application/json; charset=utf-8",
     );
     const data = await res.json();
     expect(data.url).toBe(`${address}download/win32`);
@@ -152,7 +152,7 @@ describe("update", () => {
     const res = await fetch(`${address}update/darwin_arm64/0.57.0`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8"
+      "application/json; charset=utf-8",
     );
     const data = await res.json();
     expect(data.url).toBe(`${address}download/darwin_arm64`);
@@ -162,7 +162,7 @@ describe("update", () => {
     const res = await fetch(`${address}download/darwin_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`
+      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`,
     );
   });
 
@@ -170,7 +170,7 @@ describe("update", () => {
     const res = await fetch(`${address}update/darwin/0.57.0`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8"
+      "application/json; charset=utf-8",
     );
     const data = await res.json();
     expect(data.url).toBe(`${address}download/darwin`);
@@ -180,7 +180,7 @@ describe("update", () => {
     const res = await fetch(`${address}download/darwin`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`
+      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`,
     );
   });
 });
@@ -188,14 +188,14 @@ describe("update", () => {
 describe("latest", () => {
   it("should not give update for up-to-date windows x64", async () => {
     const res = await fetch(
-      `${address}update/win32/${currentVersion}/RELEASES`
+      `${address}update/win32/${currentVersion}/RELEASES`,
     );
     expect(res.status).toEqual(204);
   });
 
   it("should not give update for up-to-date windows x64", async () => {
     const res = await fetch(
-      `${address}update/win32/${currentVersion}/releases`
+      `${address}update/win32/${currentVersion}/releases`,
     );
     expect(res.status).toEqual(204);
   });

@@ -210,7 +210,7 @@ const filenameToPlatform = (fileName: string): Platform | null => {
 };
 
 async function fetchLatestRelease(
-  config: Config
+  config: Config,
 ): Promise<Map<Platform, PlatformAssets> | null> {
   const latest = new Map<Platform, PlatformAssets>();
   const indexes = new Map<string, string>();
@@ -501,13 +501,13 @@ async function carrots(config: Config) {
 
       const patchedReleases = asset.RELEASES.replace(
         /([A-Fa-f0-9]+)\s([^\s]+\.nupkg)\s(\d+)/g,
-        `$1 ${address}download/nupkg/$2 $3`
+        `$1 ${address}download/nupkg/$2 $3`,
       );
 
       res.statusCode = 200;
       res.setHeader(
         "content-length",
-        Buffer.byteLength(patchedReleases, "utf8")
+        Buffer.byteLength(patchedReleases, "utf8"),
       );
       res.setHeader("content-type", "application/octet-stream");
       res.end(patchedReleases);
@@ -523,7 +523,7 @@ async function carrots(config: Config) {
         name: asset.version,
         notes: asset.notes,
         pub_date: asset.date,
-      })
+      }),
     );
     return;
   });
@@ -544,7 +544,7 @@ async function carrots(config: Config) {
 
   return async (
     req: http.IncomingMessage,
-    res: http.ServerResponse<http.IncomingMessage>
+    res: http.ServerResponse<http.IncomingMessage>,
   ) => {
     router.lookup(req, res);
   };

@@ -65,7 +65,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/appimage`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Hyper-${currentVersion}.AppImage`
+      `attachment; filename=Hyper-${currentVersion}.AppImage`,
     );
   });
 
@@ -73,7 +73,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/appimage_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Hyper-${currentVersion}-arm64.AppImage`
+      `attachment; filename=Hyper-${currentVersion}-arm64.AppImage`,
     );
   });
 
@@ -81,7 +81,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/dmg`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Hyper-${currentVersion}-mac-x64.dmg`
+      `attachment; filename=Hyper-${currentVersion}-mac-x64.dmg`,
     );
   });
 
@@ -89,7 +89,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/dmg_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Hyper-${currentVersion}-mac-arm64.dmg`
+      `attachment; filename=Hyper-${currentVersion}-mac-arm64.dmg`,
     );
   });
 
@@ -97,7 +97,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/rpm`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=hyper-${currentVersion}.x86_64.rpm`
+      `attachment; filename=hyper-${currentVersion}.x86_64.rpm`,
     );
   });
 
@@ -105,7 +105,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/rpm_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=hyper-${currentVersion}.aarch64.rpm`
+      `attachment; filename=hyper-${currentVersion}.aarch64.rpm`,
     );
   });
 
@@ -113,7 +113,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/deb`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=hyper_${currentVersion}_amd64.deb`
+      `attachment; filename=hyper_${currentVersion}_amd64.deb`,
     );
   });
 
@@ -121,7 +121,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/deb_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=hyper_${currentVersion}_arm64.deb`
+      `attachment; filename=hyper_${currentVersion}_arm64.deb`,
     );
   });
 
@@ -129,7 +129,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/exe`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Hyper-Setup-${currentVersion}.exe`
+      `attachment; filename=Hyper-Setup-${currentVersion}.exe`,
     );
   });
 
@@ -137,7 +137,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/snap`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=hyper_${currentVersion}_amd64.snap`
+      `attachment; filename=hyper_${currentVersion}_amd64.snap`,
     );
   });
 });
@@ -147,7 +147,7 @@ describe("update", () => {
     const res = await fetch(`${address}update/darwin_arm64/0.57.0`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8"
+      "application/json; charset=utf-8",
     );
     const data = await res.json();
     expect(data.url).toBe(`${address}download/darwin_arm64`);
@@ -157,7 +157,7 @@ describe("update", () => {
     const res = await fetch(`${address}update/darwin/0.57.0`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8"
+      "application/json; charset=utf-8",
     );
     const data = await res.json();
     expect(data.url).toBe(`${address}download/darwin`);
