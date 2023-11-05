@@ -150,7 +150,7 @@ describe("update", () => {
       "application/json; charset=utf-8"
     );
     const data = await res.json();
-    expect(data.url).toBe(`${address}download/darwin_arm64?update=true`);
+    expect(data.url).toBe(`${address}download/darwin_arm64`);
   });
 
   it("should give update for an old version mac x64", async () => {
@@ -160,7 +160,7 @@ describe("update", () => {
       "application/json; charset=utf-8"
     );
     const data = await res.json();
-    expect(data.url).toBe(`${address}download/darwin?update=true`);
+    expect(data.url).toBe(`${address}download/darwin`);
   });
 });
 

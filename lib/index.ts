@@ -75,6 +75,7 @@ function requestToPlatform(platformRaw: string): Platform | null {
   if (platform === "snap-arm64") return Platform.SNAP_ARM64;
   if (platform === "snap") return Platform.SNAP_X64;
   if (platform === "linux") return Platform.SNAP_X64;
+  if (platform === "nupkg") return Platform.NUPKG;
   return null;
 }
 
@@ -320,7 +321,7 @@ async function carrots(config: Config) {
   });
 
   // Redirect to download latest release
-  router.get("/download/:platform", async (req, res, params) => {
+  router.get("/download/:platform/:file?", async (req, res, params) => {
     const { latest, platforms, version, date } = await updateCache(res);
     if (!latest) {
       res.statusCode = 500;
@@ -380,7 +381,7 @@ async function carrots(config: Config) {
       req.headers.host?.includes("[::]")
         ? "http"
         : "https"
-    }://${req.headers.host || ""}`;
+    }://${req.headers.host || ""}/`;
 
     // Parse platform
     if (!params.platform) {
@@ -437,7 +438,7 @@ async function carrots(config: Config) {
 
       const patchedReleases = asset.RELEASES.replace(
         /([A-Fa-f0-9]+)\s([^\s]+\.nupkg)\s(\d+)/g,
-        `$1 ${address}/download/nupkg $3`
+        `$1 ${address}download/nupkg/$2 $3`
       );
 
       res.statusCode = 200;
@@ -455,7 +456,7 @@ async function carrots(config: Config) {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.end(
       JSON.stringify({
-        url: `${address}/download/${params.platform}?update=true`,
+        url: `${address}download/${params.platform}`,
         name: asset.version,
         notes: asset.notes,
         pub_date: asset.date,
