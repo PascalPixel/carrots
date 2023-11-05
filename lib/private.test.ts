@@ -122,20 +122,29 @@ describe("download", () => {
 });
 
 describe("update", () => {
-  it("should give update for an old version of windows x64", async () => {
+  it("should give nupkg info for an old version of windows x64", async () => {
     const res = await fetch(`${address}update/win32/0.57.0/RELEASES`);
     expect(res.status).toEqual(200);
     const text = await res.text();
-    expect(text).toContain(".nupkg");
-    expect(text).toContain(currentVersion);
+    expect(text).toContain(` ${address}download/nupkg `);
   });
 
   it("should give update for an old version of windows x64", async () => {
-    const res = await fetch(`${address}update/win32/0.57.0/releases`);
+    const res = await fetch(`${address}update/win32/0.57.0`);
     expect(res.status).toEqual(200);
-    const text = await res.text();
-    expect(text).toContain(".nupkg");
-    expect(text).toContain(currentVersion);
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/win32?update=true`);
+  });
+
+  it("should give update download for an old version of windows x64", async () => {
+    const res = await fetch(`${address}download/win32?update=true`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `attachment; filename=horse-${currentVersion}-win32-x64-setup.exe`
+    );
   });
 
   it("should give update for an old version of mac arm", async () => {
@@ -143,6 +152,16 @@ describe("update", () => {
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-type")).toBe(
       "application/json; charset=utf-8"
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/darwin_arm64?update=true`);
+  });
+
+  it("should give update for an old version of mac arm", async () => {
+    const res = await fetch(`${address}download/darwin_arm64?update=true`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`
     );
   });
 
@@ -152,6 +171,16 @@ describe("update", () => {
     expect(res.headers.get("content-type")).toBe(
       "application/json; charset=utf-8"
     );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download/darwin?update=true`);
+  });
+
+  it("should give update for an old version mac x64", async () => {
+    const res = await fetch(`${address}download/darwin?update=true`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toBe(
+      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`
+    );
   });
 });
 
@@ -160,18 +189,14 @@ describe("latest", () => {
     const res = await fetch(
       `${address}update/win32/${currentVersion}/RELEASES`
     );
-    expect(res.status).toEqual(200);
-    const text = await res.text();
-    expect(text).toContain(".nupkg");
+    expect(res.status).toEqual(204);
   });
 
   it("should not give update for up-to-date windows x64", async () => {
     const res = await fetch(
       `${address}update/win32/${currentVersion}/releases`
     );
-    expect(res.status).toEqual(200);
-    const text = await res.text();
-    expect(text).toContain(".nupkg");
+    expect(res.status).toEqual(204);
   });
 
   it("should not give update for up-to-date mac arm", async () => {
