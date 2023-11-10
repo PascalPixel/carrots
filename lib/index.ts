@@ -285,14 +285,21 @@ async function fetchLatestRelease(
 
 function createCache(config: Config) {
   let cachedLatest: Map<Platform, PlatformAssets> | null = null;
+  let backupCachedLatest: Map<Platform, PlatformAssets> | null = null;
   let lastUpdated: number = 0;
 
   const getLatest = async () => {
     const now = Date.now();
 
     if (!cachedLatest || now - lastUpdated > CACHE_DURATION) {
-      cachedLatest = await fetchLatestRelease(config);
-      lastUpdated = now;
+      const fetchedLatest = await fetchLatestRelease(config);
+      if (fetchedLatest) {
+        cachedLatest = fetchedLatest;
+        backupCachedLatest = fetchedLatest;
+        lastUpdated = now;
+      } else if (backupCachedLatest) {
+        cachedLatest = backupCachedLatest;
+      }
     }
 
     return cachedLatest;
