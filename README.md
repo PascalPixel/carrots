@@ -11,13 +11,13 @@ TypeScript-based Electron downloads and updates server that uses GitHub to serve
 
 ## Development
 
-1. `pnpm i`
+1. `npm install`
 2. `vercel dev`
 
 ## Testing
 
 - Adjust the `private.test.ts` to match your own repo's release files
-- `pnpm test`
+- `npm run test`
 
 ## Production
 
