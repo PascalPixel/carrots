@@ -86,109 +86,125 @@ enum Platform {
   SNAP_X64 = "snap-x64",
 }
 
+// Order is important for resolving platform
 const PLATFORMS: Record<Platform, PlatformInfo> = {
   [Platform.DMG_ARM64]: {
     name: "macOS Apple Silicon",
     aliases: ["dmg-arm64"],
     filePatterns: [
-      /.*darwin-arm.*\.dmg/,
-      /.*mac-arm.*\.dmg/,
-      /.*osx-arm.*\.dmg/,
+      /.*darwin-arm.*\.dmg$/,
+      /.*mac-arm.*\.dmg$/,
+      /.*osx-arm.*\.dmg$/,
     ],
   },
   [Platform.DMG_X64]: {
     name: "macOS Intel",
     aliases: ["dmg"],
-    filePatterns: [/.*darwin.*\.dmg/, /.*mac.*\.dmg/, /.*osx.*\.dmg/],
+    filePatterns: [
+      /.*darwin.*\.dmg$/,
+      /.*mac.*\.dmg$/,
+      /.*osx.*\.dmg$/,
+      /.*\.dmg$/,
+    ],
   },
   [Platform.DARWIN_ARM64]: {
     name: "macOS Apple Silicon",
-    aliases: ["darwin-arm64"],
-    filePatterns: [/.*darwin-arm*\.zip/, /.*mac-arm*\.zip/, /.*osx-arm*\.zip/],
+    aliases: ["darwin-arm64", "mac-arm64", "macos-arm64", "osx-arm64"],
+    filePatterns: [
+      /.*darwin-arm.*\.zip$/,
+      /.*mac-arm.*\.zip$/,
+      /.*osx-arm.*\.zip$/,
+    ],
   },
   [Platform.DARWIN_X64]: {
     name: "macOS Intel",
     aliases: ["darwin", "mac", "macos", "osx"],
-    filePatterns: [/.*darwin.*\.zip/, /.*mac.*\.zip/, /.*osx.*\.zip/],
+    filePatterns: [
+      /.*darwin.*\.zip$/,
+      /.*mac.*\.zip$/,
+      /.*osx.*\.zip$/,
+      /.*\.zip$/,
+    ],
   },
   [Platform.WIN32_IA32]: {
     name: "Windows 32-bit",
     aliases: ["x86"],
     filePatterns: [/.*win32-ia32.*/],
   },
-  [Platform.WIN32_X64]: {
-    name: "Windows 64-bit",
-    aliases: ["exe", "win", "win32", "windows", "win64", "x64"],
-    filePatterns: [/.*win32-x64.*/],
-  },
   [Platform.WIN32_ARM64]: {
     name: "Windows ARM",
     aliases: [],
     filePatterns: [/.*win32-arm64.*/],
   },
+  [Platform.WIN32_X64]: {
+    name: "Windows 64-bit",
+    aliases: ["exe", "win", "win32", "windows", "win64", "x64"],
+    filePatterns: [/.*win32-x64.*/, /.*\.exe$/],
+  },
   [Platform.NUPKG]: {
     name: "Windows Update",
     aliases: [],
-    filePatterns: [/.*\.nupkg/],
+    filePatterns: [/.*\.nupkg$/],
   },
   [Platform.APPIMAGE_ARM64]: {
     name: "Linux aarch64",
     aliases: ["appimage-arm64", "linux-arm64"],
-    filePatterns: [/.*arm64.*\.appimage/, /.*aarch64.*\.appimage/],
+    filePatterns: [/.*arm64.*\.appimage$/, /.*aarch64.*\.appimage$/],
   },
   [Platform.APPIMAGE_X64]: {
     name: "Linux x86_64",
     aliases: ["appimage", "linux"],
-    filePatterns: [/.*\.appimage/],
+    filePatterns: [/.*\.appimage$/],
   },
   [Platform.DEBIAN_ARM64]: {
     name: "Linux aarch64",
     aliases: ["deb-arm64", "debian-arm64"],
-    filePatterns: [/.*arm64.*\.deb/, /.*aarch64.*\.deb/],
+    filePatterns: [/.*arm64.*\.deb$/, /.*aarch64.*\.deb$/],
   },
   [Platform.DEBIAN_X64]: {
     name: "Linux x86_64",
     aliases: ["deb", "debian"],
-    filePatterns: [/.*\.deb/],
+    filePatterns: [/.*\.deb$/],
   },
   [Platform.FEDORA_ARM64]: {
     name: "Linux aarch64",
     aliases: ["rpm-arm64"],
-    filePatterns: [/.*arm64.*\.rpm/, /.*aarch64.*\.rpm/],
+    filePatterns: [/.*arm64.*\.rpm$/, /.*aarch64.*\.rpm$/],
   },
   [Platform.FEDORA_X64]: {
     name: "Linux x86_64",
     aliases: ["fedora", "rpm"],
-    filePatterns: [/.*\.rpm/],
+    filePatterns: [/.*\.rpm$/],
   },
   [Platform.SNAP_ARM64]: {
     name: "Linux aarch64",
     aliases: ["snap-arm64"],
-    filePatterns: [/.*arm64.*\.snap/, /.*aarch64.*\.snap/],
+    filePatterns: [/.*arm64.*\.snap$/, /.*aarch64.*\.snap$/],
   },
   [Platform.SNAP_X64]: {
     name: "Linux x86_64",
     aliases: ["snap"],
-    filePatterns: [/.*\.snap/],
+    filePatterns: [/.*\.snap$/],
   },
 };
 
 function fileNameToPlatform(fileName: string): Platform | null {
-  const lowerCaseFileName = fileName.toLowerCase();
-  for (const key of Object.keys(PLATFORMS)) {
-    const platformInfo = PLATFORMS[key as Platform];
+  const sanitizedFileName = fileName.toLowerCase().replace(/_/g, "-");
+  for (const platform of Object.keys(PLATFORMS) as Platform[]) {
+    const platformInfo = PLATFORMS[platform];
     for (const filePattern of platformInfo.filePatterns) {
-      if (filePattern.test(lowerCaseFileName)) return key as Platform;
+      if (filePattern.test(sanitizedFileName)) return platform;
     }
   }
   return null;
 }
 
 function requestToPlatform(request: string): Platform | null {
-  const lowerCaseRequest = request.toLowerCase();
-  for (const key of Object.keys(PLATFORMS)) {
-    const platformInfo = PLATFORMS[key as Platform];
-    if (platformInfo.aliases.includes(lowerCaseRequest)) return key as Platform;
+  const sanitizedRequest = request.toLowerCase().replace(/_/g, "-");
+  for (const platform of Object.keys(PLATFORMS) as Platform[]) {
+    if (platform === sanitizedRequest) return platform;
+    const platformInfo = PLATFORMS[platform];
+    if (platformInfo.aliases.includes(sanitizedRequest)) return platform;
   }
   return null;
 }
@@ -312,7 +328,8 @@ async function carrots(config: Config) {
     } catch (e) {
       console.error(e);
       res.statusCode = 500;
-      res.end("Failed to fetch latest releases");
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
       return { latest, platforms, version, date };
     }
 
@@ -324,7 +341,8 @@ async function carrots(config: Config) {
     const { latest, platforms, version, date } = await updateCache(res);
     if (!latest) {
       res.statusCode = 500;
-      res.end("Failed to fetch latest releases");
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
       return;
     }
 
@@ -379,21 +397,24 @@ async function carrots(config: Config) {
     const { latest, platforms, version, date } = await updateCache(res);
     if (!latest) {
       res.statusCode = 500;
-      res.end("Failed to fetch latest releases");
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
       return;
     }
 
     // Parse platform
     if (!params.platform) {
       res.statusCode = 400;
-      res.end("Missing platform");
+      res.statusMessage = "Missing platform";
+      res.end();
       return;
     }
     const resolvedPlatform = requestToPlatform(params.platform);
     const isPlatform = latest.has(resolvedPlatform as Platform);
     if (!isPlatform) {
       res.statusCode = 400;
-      res.end("Invalid platform");
+      res.statusMessage = "Invalid platform";
+      res.end();
       return;
     }
 
@@ -401,7 +422,8 @@ async function carrots(config: Config) {
     const asset = latest.get(resolvedPlatform as Platform);
     if (!asset) {
       res.statusCode = 400;
-      res.end("Invalid platform");
+      res.statusMessage = "Invalid platform";
+      res.end();
       return;
     }
 
@@ -424,7 +446,8 @@ async function carrots(config: Config) {
     const { latest, platforms, version, date } = await updateCache(res);
     if (!latest) {
       res.statusCode = 500;
-      res.end("Failed to fetch latest releases");
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
       return;
     }
 
@@ -440,14 +463,16 @@ async function carrots(config: Config) {
     // Parse platform
     if (!params.platform) {
       res.statusCode = 400;
-      res.end("Missing platform");
+      res.statusMessage = "Missing platform";
+      res.end();
       return;
     }
     const resolvedPlatform = requestToPlatform(params.platform);
     const isPlatform = latest.has(resolvedPlatform as Platform);
     if (!isPlatform) {
       res.statusCode = 400;
-      res.end("Invalid platform");
+      res.statusMessage = "Invalid platform";
+      res.end();
       return;
     }
     const validPlatform = resolvedPlatform as Platform;
@@ -455,13 +480,15 @@ async function carrots(config: Config) {
     // Parse version
     if (!params.version) {
       res.statusCode = 400;
-      res.end("Missing version");
+      res.statusMessage = "Missing version";
+      res.end();
       return;
     }
     const isVersion = semver.valid(params.version);
     if (!isVersion) {
       res.statusCode = 400;
-      res.end("Invalid version");
+      res.statusMessage = "Invalid version";
+      res.end();
       return;
     }
 
@@ -469,7 +496,8 @@ async function carrots(config: Config) {
     const asset = latest.get(validPlatform);
     if (!asset) {
       res.statusCode = 400;
-      res.end("Invalid platform");
+      res.statusMessage = "Invalid platform";
+      res.end();
       return;
     }
 
@@ -524,7 +552,8 @@ async function carrots(config: Config) {
     const { latest, platforms, version, date } = await updateCache(res);
     if (!latest) {
       res.statusCode = 500;
-      res.end("Failed to fetch latest releases");
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
       return;
     }
 
