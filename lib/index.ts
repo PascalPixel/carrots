@@ -7,7 +7,7 @@ import Handlebars from "handlebars";
 import { formatDistanceToNow } from "date-fns";
 
 import { getLatest } from "./cache.js";
-import { PLATFORMS } from "./platforms.js";
+import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
 
 // Main function to handle routing and responses
 export async function carrots(config: Configuration) {
@@ -264,26 +264,6 @@ export interface Configuration {
   account: string;
   repository: string;
   token?: string;
-}
-
-// Enum for supported platforms
-export enum PlatformIdentifier {
-  APPIMAGE_ARM64 = "appimage-arm64",
-  APPIMAGE_X64 = "appimage-x64",
-  DARWIN_ARM64 = "darwin-arm64",
-  DARWIN_X64 = "darwin-x64",
-  DMG_ARM64 = "dmg-arm64",
-  DMG_X64 = "dmg-x64",
-  DEBIAN_ARM64 = "deb-arm64",
-  DEBIAN_X64 = "deb-x64",
-  FEDORA_ARM64 = "rpm-arm64",
-  FEDORA_X64 = "rpm-x64",
-  WIN32_ARM64 = "win32-arm64",
-  WIN32_IA32 = "win32-ia32",
-  WIN32_X64 = "win32-x64",
-  NUPKG = "nupkg",
-  SNAP_ARM64 = "snap-arm64",
-  SNAP_X64 = "snap-x64",
 }
 
 // Details of a file for download

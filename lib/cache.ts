@@ -1,7 +1,7 @@
 import semver from "semver";
 
-import { PLATFORMS } from "./platforms.js";
-import { Configuration, PlatformIdentifier } from "./index.js";
+import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
+import { Configuration } from "./index.js";
 
 let cachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
 let backupCachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
