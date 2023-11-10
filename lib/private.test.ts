@@ -2,7 +2,7 @@ import http from "http";
 import dotenv from "dotenv";
 import { listen } from "async-listen";
 
-import carrots from "./index.js";
+import { carrots } from "./index.js";
 
 dotenv.config();
 
