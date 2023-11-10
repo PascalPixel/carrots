@@ -6,12 +6,14 @@ import Router from "find-my-way";
 import Handlebars from "handlebars";
 import { formatDistanceToNow } from "date-fns";
 
-interface Config {
+// Configuration interface for GitHub repository details
+interface Configuration {
   account: string;
   repository: string;
   token?: string;
 }
 
+// Structure for GitHub assets in a release
 interface GitHubAsset {
   url: string;
   name: string;
@@ -20,6 +22,7 @@ interface GitHubAsset {
   browser_download_url: string;
 }
 
+// Structure for GitHub release information
 interface GitHubRelease {
   name: string;
   body: string;
@@ -30,6 +33,7 @@ interface GitHubRelease {
   assets: GitHubAsset[];
 }
 
+// Structure for platform-specific release assets
 interface PlatformAssets {
   url: string;
   date: string;
@@ -42,6 +46,7 @@ interface PlatformAssets {
   content_type: string;
 }
 
+// Details of a file for download
 interface FileDetail {
   key: string;
   url: string;
@@ -50,6 +55,7 @@ interface FileDetail {
   platform: string;
 }
 
+// Variables for handlebars template
 interface TemplateVariables {
   date: string;
   github: string;
@@ -61,13 +67,15 @@ interface TemplateVariables {
   releaseNotes: string;
 }
 
+// Platform information structure
 interface PlatformInfo {
   name: string;
   aliases: string[];
   filePatterns: RegExp[];
 }
 
-enum Platform {
+// Enum for supported platforms
+enum PlatformIdentifier {
   APPIMAGE_ARM64 = "appimage-arm64",
   APPIMAGE_X64 = "appimage-x64",
   DARWIN_ARM64 = "darwin-arm64",
@@ -86,9 +94,10 @@ enum Platform {
   SNAP_X64 = "snap-x64",
 }
 
-// Order is important for resolving platform
-const PLATFORMS: Record<Platform, PlatformInfo> = {
-  [Platform.DMG_ARM64]: {
+// Platform information mapping
+// Order is important for file to platform matching
+const PLATFORMS: Record<PlatformIdentifier, PlatformInfo> = {
+  [PlatformIdentifier.DMG_ARM64]: {
     name: "macOS Apple Silicon",
     aliases: ["dmg-arm64"],
     filePatterns: [
@@ -97,7 +106,7 @@ const PLATFORMS: Record<Platform, PlatformInfo> = {
       /.*osx-arm.*\.dmg$/,
     ],
   },
-  [Platform.DMG_X64]: {
+  [PlatformIdentifier.DMG_X64]: {
     name: "macOS Intel",
     aliases: ["dmg"],
     filePatterns: [
@@ -107,7 +116,7 @@ const PLATFORMS: Record<Platform, PlatformInfo> = {
       /.*\.dmg$/,
     ],
   },
-  [Platform.DARWIN_ARM64]: {
+  [PlatformIdentifier.DARWIN_ARM64]: {
     name: "macOS Apple Silicon",
     aliases: ["darwin-arm64", "mac-arm64", "macos-arm64", "osx-arm64"],
     filePatterns: [
@@ -116,7 +125,7 @@ const PLATFORMS: Record<Platform, PlatformInfo> = {
       /.*osx-arm.*\.zip$/,
     ],
   },
-  [Platform.DARWIN_X64]: {
+  [PlatformIdentifier.DARWIN_X64]: {
     name: "macOS Intel",
     aliases: ["darwin", "mac", "macos", "osx"],
     filePatterns: [
@@ -126,71 +135,72 @@ const PLATFORMS: Record<Platform, PlatformInfo> = {
       /.*\.zip$/,
     ],
   },
-  [Platform.WIN32_IA32]: {
+  [PlatformIdentifier.WIN32_IA32]: {
     name: "Windows 32-bit",
     aliases: ["x86"],
     filePatterns: [/.*win32-ia32.*/],
   },
-  [Platform.WIN32_ARM64]: {
+  [PlatformIdentifier.WIN32_ARM64]: {
     name: "Windows ARM",
     aliases: [],
     filePatterns: [/.*win32-arm64.*/],
   },
-  [Platform.WIN32_X64]: {
+  [PlatformIdentifier.WIN32_X64]: {
     name: "Windows 64-bit",
     aliases: ["exe", "win", "win32", "windows", "win64", "x64"],
     filePatterns: [/.*win32-x64.*/, /.*\.exe$/],
   },
-  [Platform.NUPKG]: {
+  [PlatformIdentifier.NUPKG]: {
     name: "Windows Update",
     aliases: [],
     filePatterns: [/.*\.nupkg$/],
   },
-  [Platform.APPIMAGE_ARM64]: {
+  [PlatformIdentifier.APPIMAGE_ARM64]: {
     name: "Linux aarch64",
     aliases: ["appimage-arm64", "linux-arm64"],
     filePatterns: [/.*arm64.*\.appimage$/, /.*aarch64.*\.appimage$/],
   },
-  [Platform.APPIMAGE_X64]: {
+  [PlatformIdentifier.APPIMAGE_X64]: {
     name: "Linux x86_64",
     aliases: ["appimage", "linux"],
     filePatterns: [/.*\.appimage$/],
   },
-  [Platform.DEBIAN_ARM64]: {
+  [PlatformIdentifier.DEBIAN_ARM64]: {
     name: "Linux aarch64",
     aliases: ["deb-arm64", "debian-arm64"],
     filePatterns: [/.*arm64.*\.deb$/, /.*aarch64.*\.deb$/],
   },
-  [Platform.DEBIAN_X64]: {
+  [PlatformIdentifier.DEBIAN_X64]: {
     name: "Linux x86_64",
     aliases: ["deb", "debian"],
     filePatterns: [/.*\.deb$/],
   },
-  [Platform.FEDORA_ARM64]: {
+  [PlatformIdentifier.FEDORA_ARM64]: {
     name: "Linux aarch64",
     aliases: ["rpm-arm64"],
     filePatterns: [/.*arm64.*\.rpm$/, /.*aarch64.*\.rpm$/],
   },
-  [Platform.FEDORA_X64]: {
+  [PlatformIdentifier.FEDORA_X64]: {
     name: "Linux x86_64",
     aliases: ["fedora", "rpm"],
     filePatterns: [/.*\.rpm$/],
   },
-  [Platform.SNAP_ARM64]: {
+  [PlatformIdentifier.SNAP_ARM64]: {
     name: "Linux aarch64",
     aliases: ["snap-arm64"],
     filePatterns: [/.*arm64.*\.snap$/, /.*aarch64.*\.snap$/],
   },
-  [Platform.SNAP_X64]: {
+  [PlatformIdentifier.SNAP_X64]: {
     name: "Linux x86_64",
     aliases: ["snap"],
     filePatterns: [/.*\.snap$/],
   },
 };
 
-function fileNameToPlatform(fileName: string): Platform | null {
+// Converts a file name to a platform enum
+function fileNameToPlatform(fileName: string): PlatformIdentifier | null {
   const sanitizedFileName = fileName.toLowerCase().replace(/_/g, "-");
-  for (const platform of Object.keys(PLATFORMS) as Platform[]) {
+  for (const platform of Object.keys(PLATFORMS) as PlatformIdentifier[]) {
     const platformInfo = PLATFORMS[platform];
     for (const filePattern of platformInfo.filePatterns) {
       if (filePattern.test(sanitizedFileName)) return platform;
@@ -199,9 +209,10 @@ function fileNameToPlatform(fileName: string): Platform | null {
   return null;
 }
 
-function requestToPlatform(request: string): Platform | null {
+// Converts a request string to a platform enum
+function requestToPlatform(request: string): PlatformIdentifier | null {
   const sanitizedRequest = request.toLowerCase().replace(/_/g, "-");
-  for (const platform of Object.keys(PLATFORMS) as Platform[]) {
+  for (const platform of Object.keys(PLATFORMS) as PlatformIdentifier[]) {
     if (platform === sanitizedRequest) return platform;
     const platformInfo = PLATFORMS[platform];
     if (platformInfo.aliases.includes(sanitizedRequest)) return platform;
@@ -209,10 +220,11 @@ function requestToPlatform(request: string): Platform | null {
   return null;
 }
 
+// Fetches the latest release information from GitHub
 async function fetchLatestRelease(
-  config: Config,
-): Promise<Map<Platform, PlatformAssets> | null> {
-  const latest = new Map<Platform, PlatformAssets>();
+  config: Configuration,
+): Promise<Map<PlatformIdentifier, PlatformAssets> | null> {
+  const latest = new Map<PlatformIdentifier, PlatformAssets>();
   const indexes = new Map<string, string>();
 
   const account = encodeURIComponent(config.account || "");
@@ -262,9 +274,9 @@ async function fetchLatestRelease(
   }
 
   for (const key of [
-    Platform.WIN32_X64,
-    Platform.WIN32_IA32,
-    Platform.WIN32_ARM64,
+    PlatformIdentifier.WIN32_X64,
+    PlatformIdentifier.WIN32_IA32,
+    PlatformIdentifier.WIN32_ARM64,
   ]) {
     const asset = latest.get(key);
     if (asset && indexes.has(asset.version)) {
@@ -283,9 +295,10 @@ async function fetchLatestRelease(
   return latest;
 }
 
-function createCache(config: Config) {
-  let cachedLatest: Map<Platform, PlatformAssets> | null = null;
-  let backupCachedLatest: Map<Platform, PlatformAssets> | null = null;
+// Creates a cache for storing the latest release information
+function createCache(config: Configuration) {
+  let cachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
+  let backupCachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
   let lastUpdated: number = 0;
 
   const getLatest = async () => {
@@ -308,13 +321,15 @@ function createCache(config: Config) {
   return getLatest;
 }
 
-async function carrots(config: Config) {
+// Main function to handle routing and responses
+async function carrots(config: Configuration) {
   const router = Router();
   const getLatest = createCache(config);
 
+  // Function to update the cache and prepare common response data
   async function updateCache(res: http.ServerResponse) {
-    let latest: Map<Platform, PlatformAssets> | null = null;
-    let platforms: Platform[] = [];
+    let latest: Map<PlatformIdentifier, PlatformAssets> | null = null;
+    let platforms: PlatformIdentifier[] = [];
     let version: string | undefined = "";
     let date: string | undefined = "";
 
@@ -346,7 +361,7 @@ async function carrots(config: Config) {
       return;
     }
 
-    // Render page
+    // Render html from handlebars template
     const filepath = path.join(process.cwd(), "lib", "index.hbs");
     const filecontent = await fs.readFile(filepath, "utf8");
     const template = Handlebars.compile(filecontent);
@@ -410,7 +425,7 @@ async function carrots(config: Config) {
       return;
     }
     const resolvedPlatform = requestToPlatform(params.platform);
-    const isPlatform = latest.has(resolvedPlatform as Platform);
+    const isPlatform = latest.has(resolvedPlatform as PlatformIdentifier);
     if (!isPlatform) {
       res.statusCode = 400;
       res.statusMessage = "Invalid platform";
@@ -419,7 +434,7 @@ async function carrots(config: Config) {
     }
 
     // Get latest version
-    const asset = latest.get(resolvedPlatform as Platform);
+    const asset = latest.get(resolvedPlatform as PlatformIdentifier);
     if (!asset) {
       res.statusCode = 400;
       res.statusMessage = "Invalid platform";
@@ -468,14 +483,14 @@ async function carrots(config: Config) {
       return;
     }
     const resolvedPlatform = requestToPlatform(params.platform);
-    const isPlatform = latest.has(resolvedPlatform as Platform);
+    const isPlatform = latest.has(resolvedPlatform as PlatformIdentifier);
     if (!isPlatform) {
       res.statusCode = 400;
       res.statusMessage = "Invalid platform";
       res.end();
       return;
     }
-    const validPlatform = resolvedPlatform as Platform;
+    const validPlatform = resolvedPlatform as PlatformIdentifier;
 
     // Parse version
     if (!params.version) {
@@ -501,7 +516,8 @@ async function carrots(config: Config) {
       return;
     }
 
-    // Upgrade or Downgrade(!) to the 'latest version' on the server
+    // Upgrade or Downgrade the client version to match the latest release on the server
+    // Downgrade allows updates to be pulled from the server
     const isLatestVersion = semver.eq(params.version, asset.version);
     if (isLatestVersion) {
       res.statusCode = 204;
