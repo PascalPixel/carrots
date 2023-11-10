@@ -6,46 +6,40 @@ import Router from "find-my-way";
 import Handlebars from "handlebars";
 import { formatDistanceToNow } from "date-fns";
 
-const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
-
-type Config = {
-  interval?: string;
-  account?: string;
-  repository?: string;
-  pre?: string;
+interface Config {
+  account: string;
+  repository: string;
   token?: string;
-  url?: string;
-};
+}
 
-type PlatformAssets = {
+interface GitHubAsset {
+  url: string;
+  name: string;
+  size: number;
+  content_type: string;
+  browser_download_url: string;
+}
+
+interface GitHubRelease {
+  name: string;
+  body: string;
+  draft: boolean;
+  tag_name: string;
+  prerelease: boolean;
+  published_at: string;
+  assets: GitHubAsset[];
+}
+
+interface PlatformAssets {
+  url: string;
   date: string;
   name: string;
-  version: string;
-  url: string;
-  notes: string;
-  api_url: string;
-  content_type: string;
   size: number;
+  notes: string;
+  version: string;
+  api_url: string;
   RELEASES?: string;
-};
-
-enum Platform {
-  APPIMAGE_ARM64 = "appimage-arm64",
-  APPIMAGE_X64 = "appimage-x64",
-  DARWIN_ARM64 = "darwin-arm64",
-  DARWIN_X64 = "darwin-x64",
-  DMG_ARM64 = "dmg-arm64",
-  DMG_X64 = "dmg-x64",
-  DEBIAN_ARM64 = "deb-arm64",
-  DEBIAN_X64 = "deb-x64",
-  REDHAT_ARM64 = "rpm-arm64",
-  REDHAT_X64 = "rpm-x64",
-  WIN32_ARM64 = "win32-arm64",
-  WIN32_IA32 = "win32-ia32",
-  WIN32_X64 = "win32-x64",
-  NUPKG = "nupkg",
-  SNAP_ARM64 = "snap-arm64",
-  SNAP_X64 = "snap-x64",
+  content_type: string;
 }
 
 interface FileDetail {
@@ -57,157 +51,147 @@ interface FileDetail {
 }
 
 interface TemplateVariables {
-  account: string;
-  repository: string;
   date: string;
-  files: Record<string, FileDetail>;
-  version: string;
-  releaseNotes: string;
-  allReleases: string;
   github: string;
+  account: string;
+  version: string;
+  repository: string;
+  allReleases: string;
+  files: Record<string, FileDetail>;
+  releaseNotes: string;
 }
 
-function platformToHumanName(platform: Platform): string {
-  if (platform === Platform.DARWIN_ARM64) return "macOS Apple Silicon";
-  if (platform === Platform.DARWIN_X64) return "macOS Intel";
-  if (platform === Platform.DMG_ARM64) return "macOS Apple Silicon";
-  if (platform === Platform.DMG_X64) return "macOS Intel";
-
-  if (platform === Platform.WIN32_ARM64) return "Windows aarch64";
-  if (platform === Platform.WIN32_IA32) return "Windows 32-bit";
-  if (platform === Platform.WIN32_X64) return "Windows 64-bit";
-  if (platform === Platform.NUPKG) return "Windows Update";
-
-  if (platform === Platform.APPIMAGE_ARM64) return "Linux aarch64";
-  if (platform === Platform.APPIMAGE_X64) return "Linux x86_64";
-  if (platform === Platform.DEBIAN_ARM64) return "Linux aarch64";
-  if (platform === Platform.DEBIAN_X64) return "Linux x86_64";
-  if (platform === Platform.REDHAT_ARM64) return "Linux aarch64";
-  if (platform === Platform.REDHAT_X64) return "Linux x86_64";
-  if (platform === Platform.SNAP_ARM64) return "Linux aarch64";
-  if (platform === Platform.SNAP_X64) return "Linux x86_64";
-  return "";
+interface PlatformInfo {
+  name: string;
+  aliases: string[];
+  filePatterns: RegExp[];
 }
 
-function requestToPlatform(platformRaw: string): Platform | null {
-  const platform = platformRaw.toLowerCase().replace(/_/g, "-");
-  if (platform === "appimage-arm64") return Platform.APPIMAGE_ARM64;
-  if (platform === "appimage") return Platform.APPIMAGE_X64;
-  if (platform === "darwin-arm64") return Platform.DARWIN_ARM64;
-  if (platform === "darwin") return Platform.DARWIN_X64;
-  if (platform === "deb-arm64") return Platform.DEBIAN_ARM64;
-  if (platform === "deb") return Platform.DEBIAN_X64;
-  if (platform === "debian") return Platform.DEBIAN_X64;
-  if (platform === "dmg-arm64") return Platform.DMG_ARM64;
-  if (platform === "dmg") return Platform.DMG_X64;
-  if (platform === "exe") return Platform.WIN32_X64;
-  if (platform === "fedora") return Platform.REDHAT_X64;
-  if (platform === "mac") return Platform.DARWIN_X64;
-  if (platform === "macos") return Platform.DARWIN_X64;
-  if (platform === "osx") return Platform.DARWIN_X64;
-  if (platform === "rpm-arm64") return Platform.REDHAT_ARM64;
-  if (platform === "rpm") return Platform.REDHAT_X64;
-  if (platform === "win") return Platform.WIN32_X64;
-  if (platform === "win32") return Platform.WIN32_X64;
-  if (platform === "windows") return Platform.WIN32_X64;
-  if (platform === "win64") return Platform.WIN32_X64;
-  if (platform === "x64") return Platform.WIN32_X64;
-  if (platform === "x86") return Platform.WIN32_IA32;
-  if (platform === "snap-arm64") return Platform.SNAP_ARM64;
-  if (platform === "snap") return Platform.SNAP_X64;
-  if (platform === "linux") return Platform.SNAP_X64;
-  if (platform === "nupkg") return Platform.NUPKG;
-  return null;
+enum Platform {
+  APPIMAGE_ARM64 = "appimage-arm64",
+  APPIMAGE_X64 = "appimage-x64",
+  DARWIN_ARM64 = "darwin-arm64",
+  DARWIN_X64 = "darwin-x64",
+  DMG_ARM64 = "dmg-arm64",
+  DMG_X64 = "dmg-x64",
+  DEBIAN_ARM64 = "deb-arm64",
+  DEBIAN_X64 = "deb-x64",
+  FEDORA_ARM64 = "rpm-arm64",
+  FEDORA_X64 = "rpm-x64",
+  WIN32_ARM64 = "win32-arm64",
+  WIN32_IA32 = "win32-ia32",
+  WIN32_X64 = "win32-x64",
+  NUPKG = "nupkg",
+  SNAP_ARM64 = "snap-arm64",
+  SNAP_X64 = "snap-x64",
 }
 
-const filenameToPlatform = (fileName: string): Platform | null => {
-  const lowerFileName = fileName.toLowerCase();
-
-  if (lowerFileName.endsWith(".dmg")) {
-    if (
-      lowerFileName.includes("darwin-arm") ||
-      lowerFileName.includes("mac-arm") ||
-      lowerFileName.includes("osx-arm")
-    ) {
-      return Platform.DMG_ARM64;
-    }
-    if (
-      lowerFileName.includes("darwin") ||
-      lowerFileName.includes("mac") ||
-      lowerFileName.includes("osx")
-    ) {
-      return Platform.DMG_X64;
-    }
-  }
-
-  if (lowerFileName.endsWith(".zip")) {
-    if (
-      lowerFileName.includes("darwin-arm") ||
-      lowerFileName.includes("mac-arm") ||
-      lowerFileName.includes("osx-arm")
-    ) {
-      return Platform.DARWIN_ARM64;
-    }
-    if (
-      lowerFileName.includes("darwin") ||
-      lowerFileName.includes("mac") ||
-      lowerFileName.includes("osx")
-    ) {
-      return Platform.DARWIN_X64;
-    }
-  }
-
-  if (lowerFileName.includes("win32-ia32")) {
-    return Platform.WIN32_IA32;
-  }
-
-  if (lowerFileName.includes("win32-x64")) {
-    return Platform.WIN32_X64;
-  }
-
-  if (lowerFileName.includes("win32-arm64")) {
-    return Platform.WIN32_ARM64;
-  }
-
-  if (lowerFileName.endsWith(".nupkg")) {
-    return Platform.NUPKG;
-  }
-
-  if (lowerFileName.endsWith(".deb") || lowerFileName.endsWith(".rpm")) {
-    if (lowerFileName.includes("arm64") || lowerFileName.includes("aarch64")) {
-      return lowerFileName.endsWith(".deb")
-        ? Platform.DEBIAN_ARM64
-        : Platform.REDHAT_ARM64;
-    } else {
-      return lowerFileName.endsWith(".deb")
-        ? Platform.DEBIAN_X64
-        : Platform.REDHAT_X64;
-    }
-  }
-
-  if (lowerFileName.endsWith(".appimage")) {
-    return lowerFileName.includes("arm64") || lowerFileName.includes("aarch64")
-      ? Platform.APPIMAGE_ARM64
-      : Platform.APPIMAGE_X64;
-  }
-
-  if (lowerFileName.endsWith(".snap")) {
-    return lowerFileName.includes("arm64") || lowerFileName.includes("aarch64")
-      ? Platform.SNAP_ARM64
-      : Platform.SNAP_X64;
-  }
-
-  // Special case handling: Default x64 windows asset
-  if (
-    lowerFileName.endsWith(".exe") &&
-    !lowerFileName.includes("arm") &&
-    !lowerFileName.includes("ia32")
-  ) {
-    return Platform.WIN32_X64;
-  }
-
-  return null;
+const PLATFORMS: Record<Platform, PlatformInfo> = {
+  [Platform.DMG_ARM64]: {
+    name: "macOS Apple Silicon",
+    aliases: ["dmg-arm64"],
+    filePatterns: [
+      /.*darwin-arm.*\.dmg/,
+      /.*mac-arm.*\.dmg/,
+      /.*osx-arm.*\.dmg/,
+    ],
+  },
+  [Platform.DMG_X64]: {
+    name: "macOS Intel",
+    aliases: ["dmg"],
+    filePatterns: [/.*darwin.*\.dmg/, /.*mac.*\.dmg/, /.*osx.*\.dmg/],
+  },
+  [Platform.DARWIN_ARM64]: {
+    name: "macOS Apple Silicon",
+    aliases: ["darwin-arm64"],
+    filePatterns: [/.*darwin-arm*\.zip/, /.*mac-arm*\.zip/, /.*osx-arm*\.zip/],
+  },
+  [Platform.DARWIN_X64]: {
+    name: "macOS Intel",
+    aliases: ["darwin", "mac", "macos", "osx"],
+    filePatterns: [/.*darwin.*\.zip/, /.*mac.*\.zip/, /.*osx.*\.zip/],
+  },
+  [Platform.WIN32_IA32]: {
+    name: "Windows 32-bit",
+    aliases: ["x86"],
+    filePatterns: [/.*win32-ia32.*/],
+  },
+  [Platform.WIN32_X64]: {
+    name: "Windows 64-bit",
+    aliases: ["exe", "win", "win32", "windows", "win64", "x64"],
+    filePatterns: [/.*win32-x64.*/],
+  },
+  [Platform.WIN32_ARM64]: {
+    name: "Windows ARM",
+    aliases: [],
+    filePatterns: [/.*win32-arm64.*/],
+  },
+  [Platform.NUPKG]: {
+    name: "Windows Update",
+    aliases: [],
+    filePatterns: [/.*\.nupkg/],
+  },
+  [Platform.APPIMAGE_ARM64]: {
+    name: "Linux aarch64",
+    aliases: ["appimage-arm64", "linux-arm64"],
+    filePatterns: [/.*arm64.*\.appimage/, /.*aarch64.*\.appimage/],
+  },
+  [Platform.APPIMAGE_X64]: {
+    name: "Linux x86_64",
+    aliases: ["appimage", "linux"],
+    filePatterns: [/.*\.appimage/],
+  },
+  [Platform.DEBIAN_ARM64]: {
+    name: "Linux aarch64",
+    aliases: ["deb-arm64", "debian-arm64"],
+    filePatterns: [/.*arm64.*\.deb/, /.*aarch64.*\.deb/],
+  },
+  [Platform.DEBIAN_X64]: {
+    name: "Linux x86_64",
+    aliases: ["deb", "debian"],
+    filePatterns: [/.*\.deb/],
+  },
+  [Platform.FEDORA_ARM64]: {
+    name: "Linux aarch64",
+    aliases: ["rpm-arm64"],
+    filePatterns: [/.*arm64.*\.rpm/, /.*aarch64.*\.rpm/],
+  },
+  [Platform.FEDORA_X64]: {
+    name: "Linux x86_64",
+    aliases: ["fedora", "rpm"],
+    filePatterns: [/.*\.rpm/],
+  },
+  [Platform.SNAP_ARM64]: {
+    name: "Linux aarch64",
+    aliases: ["snap-arm64"],
+    filePatterns: [/.*arm64.*\.snap/, /.*aarch64.*\.snap/],
+  },
+  [Platform.SNAP_X64]: {
+    name: "Linux x86_64",
+    aliases: ["snap"],
+    filePatterns: [/.*\.snap/],
+  },
 };
+
+function fileNameToPlatform(fileName: string): Platform | null {
+  const lowerCaseFileName = fileName.toLowerCase();
+  for (const key of Object.keys(PLATFORMS)) {
+    const platformInfo = PLATFORMS[key as Platform];
+    for (const filePattern of platformInfo.filePatterns) {
+      if (filePattern.test(lowerCaseFileName)) return key as Platform;
+    }
+  }
+  return null;
+}
+
+function requestToPlatform(request: string): Platform | null {
+  const lowerCaseRequest = request.toLowerCase();
+  for (const key of Object.keys(PLATFORMS)) {
+    const platformInfo = PLATFORMS[key as Platform];
+    if (platformInfo.aliases.includes(lowerCaseRequest)) return key as Platform;
+  }
+  return null;
+}
 
 async function fetchLatestRelease(
   config: Config,
@@ -231,7 +215,7 @@ async function fetchLatestRelease(
     return null;
   }
 
-  const releases = await releasesResponse.json();
+  const releases: GitHubRelease[] = await releasesResponse.json();
 
   for (const release of releases) {
     if (
@@ -243,7 +227,7 @@ async function fetchLatestRelease(
           indexes.set(release.tag_name, asset.url);
         } else {
           // Store in latest
-          const platform = filenameToPlatform(asset.name);
+          const platform = fileNameToPlatform(asset.name);
           if (platform && !latest.has(platform)) {
             latest.set(platform, {
               name: release.name,
@@ -291,7 +275,7 @@ function createCache(config: Config) {
   const getLatest = async () => {
     const now = Date.now();
 
-    if (!cachedLatest || now - lastUpdated > CACHE_DURATION) {
+    if (!cachedLatest || now - lastUpdated > 1000 * 60 * 15 /* 15 minutes */) {
       const fetchedLatest = await fetchLatestRelease(config);
       if (fetchedLatest) {
         cachedLatest = fetchedLatest;
@@ -357,7 +341,7 @@ async function carrots(config: Config) {
           url: asset.url,
           size: asset.size,
           filename: asset.url.split("/").pop() || "",
-          platform: platformToHumanName(platform),
+          platform: PLATFORMS[platform].name,
         };
       }
     }
