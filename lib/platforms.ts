@@ -24,12 +24,16 @@ export const PLATFORMS: Record<
   PlatformIdentifier,
   {
     name: string;
+    platform: "darwin" | "linux" | "win32";
+    arch: "arm64" | "ia32" | "x64";
     aliases: string[];
     filePatterns: RegExp[];
   }
 > = {
   [PlatformIdentifier.DMG_ARM64]: {
     name: "macOS Apple Silicon",
+    platform: "darwin",
+    arch: "arm64",
     aliases: ["dmg-arm64"],
     filePatterns: [
       /.*darwin-arm.*\.dmg$/,
@@ -39,6 +43,8 @@ export const PLATFORMS: Record<
   },
   [PlatformIdentifier.DMG_X64]: {
     name: "macOS Intel",
+    platform: "darwin",
+    arch: "x64",
     aliases: ["dmg"],
     filePatterns: [
       /.*darwin.*\.dmg$/,
@@ -49,6 +55,8 @@ export const PLATFORMS: Record<
   },
   [PlatformIdentifier.DARWIN_ARM64]: {
     name: "macOS Apple Silicon",
+    platform: "darwin",
+    arch: "arm64",
     aliases: ["darwin-arm64", "mac-arm64", "macos-arm64", "osx-arm64"],
     filePatterns: [
       /.*darwin-arm.*\.zip$/,
@@ -58,6 +66,8 @@ export const PLATFORMS: Record<
   },
   [PlatformIdentifier.DARWIN_X64]: {
     name: "macOS Intel",
+    platform: "darwin",
+    arch: "x64",
     aliases: ["darwin", "mac", "macos", "osx"],
     filePatterns: [
       /.*darwin.*\.zip$/,
@@ -68,61 +78,85 @@ export const PLATFORMS: Record<
   },
   [PlatformIdentifier.WIN32_IA32]: {
     name: "Windows 32-bit",
+    platform: "win32",
+    arch: "ia32",
     aliases: ["x86"],
     filePatterns: [/.*win32-ia32.*/],
   },
   [PlatformIdentifier.WIN32_ARM64]: {
     name: "Windows ARM",
+    platform: "win32",
+    arch: "arm64",
     aliases: [],
     filePatterns: [/.*win32-arm64.*/],
   },
   [PlatformIdentifier.WIN32_X64]: {
     name: "Windows 64-bit",
+    platform: "win32",
+    arch: "x64",
     aliases: ["exe", "win", "win32", "windows", "win64", "x64"],
     filePatterns: [/.*win32-x64.*/, /.*\.exe$/],
   },
   [PlatformIdentifier.NUPKG]: {
     name: "Windows Update",
+    platform: "win32",
+    arch: "x64",
     aliases: [],
     filePatterns: [/.*\.nupkg$/],
   },
   [PlatformIdentifier.APPIMAGE_ARM64]: {
     name: "Linux aarch64",
+    platform: "linux",
+    arch: "arm64",
     aliases: ["appimage-arm64", "linux-arm64"],
     filePatterns: [/.*arm64.*\.appimage$/, /.*aarch64.*\.appimage$/],
   },
   [PlatformIdentifier.APPIMAGE_X64]: {
     name: "Linux x86_64",
+    platform: "linux",
+    arch: "x64",
     aliases: ["appimage", "linux"],
     filePatterns: [/.*\.appimage$/],
   },
   [PlatformIdentifier.DEBIAN_ARM64]: {
     name: "Linux aarch64",
+    platform: "linux",
+    arch: "arm64",
     aliases: ["deb-arm64", "debian-arm64"],
     filePatterns: [/.*arm64.*\.deb$/, /.*aarch64.*\.deb$/],
   },
   [PlatformIdentifier.DEBIAN_X64]: {
     name: "Linux x86_64",
+    platform: "linux",
+    arch: "x64",
     aliases: ["deb", "debian"],
     filePatterns: [/.*\.deb$/],
   },
   [PlatformIdentifier.FEDORA_ARM64]: {
     name: "Linux aarch64",
+    platform: "linux",
+    arch: "arm64",
     aliases: ["rpm-arm64"],
     filePatterns: [/.*arm64.*\.rpm$/, /.*aarch64.*\.rpm$/],
   },
   [PlatformIdentifier.FEDORA_X64]: {
     name: "Linux x86_64",
+    platform: "linux",
+    arch: "x64",
     aliases: ["fedora", "rpm"],
     filePatterns: [/.*\.rpm$/],
   },
   [PlatformIdentifier.SNAP_ARM64]: {
     name: "Linux aarch64",
+    platform: "linux",
+    arch: "arm64",
     aliases: ["snap-arm64"],
     filePatterns: [/.*arm64.*\.snap$/, /.*aarch64.*\.snap$/],
   },
   [PlatformIdentifier.SNAP_X64]: {
     name: "Linux x86_64",
+    platform: "linux",
+    arch: "x64",
     aliases: ["snap"],
     filePatterns: [/.*\.snap$/],
   },

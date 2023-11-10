@@ -34,6 +34,17 @@ describe("api", () => {
     const data = await res.json();
     expect(data.version).toMatch(/\d+\.\d+\.\d+/);
   });
+
+  it("should give assets as json", async () => {
+    const res = await fetch(`${address}api/latest`);
+    expect(res.status).toEqual(200);
+    const data = await res.json();
+    expect(data[0].id).toBeDefined();
+    expect(data[0].platform).toBeDefined();
+    expect(data[0].arch).toBeDefined();
+    expect(data[0].version).toBeDefined();
+    expect(data[0].date).toBeDefined();
+  });
 });
 
 describe("html", () => {

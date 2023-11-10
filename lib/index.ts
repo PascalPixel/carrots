@@ -1,4 +1,4 @@
-import http from "http";
+import http, { get } from "http";
 import path from "path";
 import semver from "semver";
 import fs from "fs/promises";
@@ -238,6 +238,35 @@ export async function carrots(config: Configuration) {
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ version }));
+  });
+
+  // Get latest release as json
+  router.get("/api/latest", async (req, res, params) => {
+    const { latest, platforms, version, date } = await getLatest(config);
+    if (!latest) {
+      res.statusCode = 500;
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
+      return;
+    }
+
+    const data = platforms
+      .map((platform) => {
+        const asset = latest.get(platform);
+        if (!asset) return null;
+        return {
+          id: platform,
+          platform: PLATFORMS[platform].platform,
+          arch: PLATFORMS[platform].arch,
+          version: asset.version,
+          date: asset.date,
+        };
+      })
+      .filter((asset) => asset);
+
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(data));
   });
 
   return async (
