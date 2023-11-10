@@ -7,6 +7,7 @@
   "type": "module",
   "main": "lib/index.ts",
   "scripts": {
+    "preview": "vercel dev",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.ts",
     "lint": "prettier --config .prettierrc.json -c ./**/*.ts && eslint --config .eslintrc.json ./**/*.ts && tsc --noEmit",
     "format": "prettier --config .prettierrc.json -w ./**/*.ts"
@@ -15,7 +16,6 @@
     "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
     "find-my-way": "^7.7.0",
-    "handlebars": "^4.7.8",
     "semver": "^7.5.4"
   },
   "devDependencies": {
