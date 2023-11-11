@@ -154,7 +154,7 @@ interface GitHubRelease {
 }
 
 // Structure for platform-specific release assets
-interface PlatformAssets {
+export interface PlatformAssets {
   url: string;
   date: string;
   name: string;

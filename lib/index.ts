@@ -1,10 +1,10 @@
 import http from "http";
 import semver from "semver";
 import Router from "find-my-way";
-import { formatDistanceToNow } from "date-fns";
 
 import { getLatest } from "./cache.js";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
+import { makePage } from "./page.js";
 
 // Main function to handle routing and responses
 export async function carrots(config: Configuration) {
@@ -20,103 +20,7 @@ export async function carrots(config: Configuration) {
       return;
     }
 
-    const data = platforms.map((platform) => {
-      const asset = latest.get(platform);
-      if (!asset) return null;
-      return {
-        id: platform,
-        platform: PLATFORMS[platform].platform,
-        arch: PLATFORMS[platform].arch,
-        version: asset.version,
-        date: asset.date,
-        fileName: asset.name,
-      };
-    });
-
-    const html = `
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="utf-8" />
-          <title>${config.account}/${config.repository}</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter">
-          <style>
-            body {
-              font-family: 'Inter', sans-serif;
-              margin: 0;
-              background: #000;
-              color: #fff;
-            }
-            h1 {
-              font-size: 2rem;
-            }
-            a {
-              color: #fa0;
-            }
-            main {
-              padding: 2rem;
-              margin: 0 auto;
-              max-width: 768px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 2rem;
-              table-layout: fixed;
-            }
-            th {
-              font-weight: bold;
-              background: #111;
-            }
-            th, td {
-              border: 1px solid #444;
-              padding: 0.5rem;
-              text-align: left;
-              vertical-align: top;
-              position: relative;
-              word-break: break-word;
-            }
-          </style>
-        </head>
-        <body>
-          <main>
-            <h1>${config.account}/${config.repository}</h1>
-            <table>
-              <tr>
-                <th>OS</th>
-                <th>Chip</th>
-                <th>Version</th>
-                <th colspan="2">Date</th>
-                <th>Download</th>
-              </tr>
-              ${data
-                .map((asset) =>
-                  asset
-                    ? `
-                        <tr id="${asset.id}">
-                          <td>${asset.platform}</td> 
-                          <td>${asset.arch}</td>
-                          <td>${asset.version}</td>
-                          <td colspan="2">${formatDistanceToNow(
-                            new Date(asset.date),
-                            {
-                              addSuffix: true,
-                            },
-                          )}</td>
-                          <td><a href="/download/${asset.id}">${
-                            asset.fileName
-                          }</a></td>
-                        </tr>
-                      `
-                    : ``,
-                )
-                .join("")}
-            </table>
-          </main>
-        </body>
-      </html>
-    `;
+    const html = makePage(latest);
 
     // Send response
     res.statusCode = 200;
@@ -312,7 +216,7 @@ export async function carrots(config: Configuration) {
         if (!asset) return null;
         return {
           id: platform,
-          platform: PLATFORMS[platform].platform,
+          platform: PLATFORMS[platform].os,
           arch: PLATFORMS[platform].arch,
           version: asset.version,
           date: asset.date,

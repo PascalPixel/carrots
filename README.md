@@ -12,7 +12,7 @@ TypeScript-based Electron downloads and updates server that uses GitHub to serve
 ## Development
 
 1. `npm install`
-2. `vercel dev`
+2. `npm run preview`
 
 ## Testing
 
