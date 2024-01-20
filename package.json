@@ -1,6 +1,6 @@
 {
   "name": "carrots",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lightweight update server for Electron apps",
   "repository": "PascalPixel/carrots",
   "license": "MIT",

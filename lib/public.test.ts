@@ -52,7 +52,7 @@ describe("html", () => {
     const res = await fetch(`${address}`);
     expect(res.status).toEqual(200);
     const text = await res.text();
-    expect(text).toContain('<div id="wrap">');
+    expect(text).toContain("<main>");
   });
 
   it("should throw 404 for favicon", async () => {
@@ -60,9 +60,9 @@ describe("html", () => {
     expect(res.status).toEqual(404);
   });
 
-  it("should throw 404 for robots.txt", async () => {
+  it("should resolve robots.txt", async () => {
     const res = await fetch(`${address}robots.txt`);
-    expect(res.status).toEqual(404);
+    expect(res.status).toEqual(200);
   });
 
   it("should throw 404 for wp-login.php", async () => {

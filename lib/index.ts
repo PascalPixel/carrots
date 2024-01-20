@@ -29,6 +29,13 @@ export async function carrots(config: Configuration) {
     return;
   });
 
+  // Disallow Crawlers
+  router.get("/robots.txt", (req, res) => {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/plain");
+    res.end("User-agent: *\nDisallow: /");
+  });
+
   // Redirect to download latest release
   router.get("/download/:platform/:file?", async (req, res, params) => {
     const { latest, platforms, version, date } = await getLatest(config);
