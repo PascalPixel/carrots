@@ -109,7 +109,12 @@ export const PLATFORMS: Record<
     arch: "arm64",
     ext: "AppImage",
     aliases: ["appimage-arm64", "linux-arm64"],
-    filePatterns: [/.*arm64.*\.appimage$/, /.*aarch64.*\.appimage$/],
+    filePatterns: [
+      /.*arm64.*\.appimage$/,
+      /.*arm64.appimage$/,
+      /.*aarch64.*\.appimage$/,
+      /.*aarch64.appimage$/,
+    ],
   },
   [PlatformIdentifier.APPIMAGE_X64]: {
     os: "linux",
