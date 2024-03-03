@@ -71,7 +71,7 @@ async function fetchLatestRelease(
 
   const releases: GitHubRelease[] = await releasesResponse.json();
 
-  for (const release of releases) {
+  for (const release of [...releases].reverse()) {
     if (
       !(!semver.valid(release.tag_name) || release.draft || release.prerelease)
     ) {
@@ -81,18 +81,44 @@ async function fetchLatestRelease(
           indexes.set(release.tag_name, asset.url);
         } else {
           // Store in latest
-          const platform = fileNameToPlatform(asset.name);
-          if (platform && !latest.has(platform)) {
-            latest.set(platform, {
-              name: release.name,
-              notes: release.body,
-              version: release.tag_name,
-              date: release.published_at,
-              url: asset.browser_download_url,
-              api_url: asset.url,
-              content_type: asset.content_type,
-              size: Math.round((asset.size / 1000000) * 10) / 10,
-            });
+          const platforms = fileNameToPlatforms(asset.name);
+          if (platforms) {
+            for (const platform of platforms) {
+              latest.set(platform, {
+                name: release.name,
+                notes: release.body,
+                version: release.tag_name,
+                date: release.published_at,
+                url: asset.browser_download_url,
+                api_url: asset.url,
+                content_type: asset.content_type,
+                size: Math.round((asset.size / 1000000) * 10) / 10,
+              });
+            }
+          } else {
+            // Might not have arch in the name, so we'll add it to test
+            let patchedName = asset.name;
+            const insertIndex = asset.name.lastIndexOf(".");
+            if (insertIndex >= 0) {
+              patchedName = `${asset.name.substring(0, insertIndex)}-x64${asset.name.substring(insertIndex)}`;
+            }
+            const platforms = fileNameToPlatforms(patchedName);
+            if (platforms) {
+              for (const platform of platforms) {
+                latest.set(platform, {
+                  name: release.name,
+                  notes: release.body,
+                  version: release.tag_name,
+                  date: release.published_at,
+                  url: asset.browser_download_url,
+                  api_url: asset.url,
+                  content_type: asset.content_type,
+                  size: Math.round((asset.size / 1000000) * 10) / 10,
+                });
+              }
+            } else {
+              console.debug(`Unknown platform for ${asset.name}`);
+            }
           }
         }
       }
@@ -121,16 +147,18 @@ async function fetchLatestRelease(
   return latest;
 }
 
-// Converts a file name to a platform enum
-function fileNameToPlatform(fileName: string): PlatformIdentifier | null {
+function fileNameToPlatforms(fileName: string): PlatformIdentifier[] {
   const sanitizedFileName = fileName.toLowerCase().replace(/_/g, "-");
+  const matchedPlatforms: PlatformIdentifier[] = [];
   for (const platform of Object.keys(PLATFORMS) as PlatformIdentifier[]) {
     const platformInfo = PLATFORMS[platform];
     for (const filePattern of platformInfo.filePatterns) {
-      if (filePattern.test(sanitizedFileName)) return platform;
+      if (filePattern.test(sanitizedFileName)) {
+        matchedPlatforms.push(platform);
+      }
     }
   }
-  return null;
+  return matchedPlatforms;
 }
 
 // Structure for GitHub assets in a release
