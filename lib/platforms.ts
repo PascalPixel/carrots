@@ -109,7 +109,7 @@ export const PLATFORMS: Record<
     arch: "x64",
     ext: "exe",
     aliases: ["exe", "win", "win32", "windows", "win64", "x64"],
-    filePatterns: [/.*win32.*x64.*\.exe$/],
+    filePatterns: [/.*win32.*x64.*\.exe$/, /.*\.exe$/],
   },
   [PlatformIdentifier.NUPKG]: {
     os: "win32",
