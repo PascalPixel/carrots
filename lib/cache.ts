@@ -6,6 +6,7 @@ import { Configuration } from "./index.js";
 let cachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
 let backupCachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
 let lastUpdated: number = 0;
+const cacheDuration = 1000 * 60 * 5; /* 5 minutes */
 
 // Function to update the cache and prepare common response data
 export async function getLatest(config: Configuration) {
@@ -32,7 +33,7 @@ export async function getLatest(config: Configuration) {
 const getLatestRelease = async (config: Configuration) => {
   const now = Date.now();
 
-  if (!cachedLatest || now - lastUpdated > 1000 * 60 * 15 /* 15 minutes */) {
+  if (!cachedLatest || now - lastUpdated > cacheDuration) {
     const fetchedLatest = await fetchLatestRelease(config);
     if (fetchedLatest) {
       cachedLatest = fetchedLatest;
