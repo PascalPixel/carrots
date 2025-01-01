@@ -78,7 +78,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/exe`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=horse-${currentVersion}-win32-x64-setup.exe`,
+      `attachment; filename=Horse-${currentVersion}.Setup.exe`,
     );
   });
 
@@ -86,7 +86,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/darwin_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-universal-${currentVersion}.zip`,
+      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`,
     );
   });
 
@@ -94,7 +94,7 @@ describe("download", () => {
     const res = await fetch(`${address}download/darwin`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-universal-${currentVersion}.zip`,
+      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`,
     );
   });
 
@@ -175,7 +175,7 @@ describe("update", () => {
     const res = await fetch(`${address}download/darwin_arm64`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-universal-${currentVersion}.zip`,
+      `attachment; filename=Horse-darwin-arm64-${currentVersion}.zip`,
     );
   });
 
@@ -193,7 +193,7 @@ describe("update", () => {
     const res = await fetch(`${address}download/darwin`);
     expect(res.status).toEqual(200);
     expect(res.headers.get("content-disposition")).toBe(
-      `attachment; filename=Horse-darwin-universal-${currentVersion}.zip`,
+      `attachment; filename=Horse-darwin-x64-${currentVersion}.zip`,
     );
   });
 });
