@@ -1,12 +1,17 @@
 {
   "env": {
     "node": true,
-    "jest": true
+    "jest": true,
+    "es2022": true
   },
-  "extends": "eslint:recommended",
-  "overrides": [],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "parserOptions": {
-    "ecmaVersion": "latest"
+    "ecmaVersion": "latest",
+    "sourceType": "module"
   },
-  "rules": {}
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "off"
+  }
 }
