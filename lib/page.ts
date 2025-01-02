@@ -641,6 +641,9 @@ function VersionPage({
     }[]
   > = new Map();
 
+  // Get release notes from any asset (they should all be the same for a version)
+  const releaseNotes = Array.from(assets.values())[0]?.notes || "";
+
   [...assets.entries()].forEach(([id, asset]) => {
     const key: `${NodeJS.Platform}-${string}` = `${PLATFORMS[id].os}-${PLATFORMS[id].ext}`;
     if (!groupedData.has(key)) groupedData.set(key, []);
@@ -663,6 +666,25 @@ function VersionPage({
     o("p", null, [o(Link, { href: "/" }, "← Back to all versions")]),
     o(Header, null, [`${account}/${repository}`]),
     o(SubHeader, null, [`Version ${version}`]),
+    releaseNotes &&
+      o(
+        "div",
+        {
+          style: {
+            background: "#111",
+            border: "1px solid #333",
+            borderRadius: "0.5rem",
+            padding: "1.5rem",
+            marginBottom: "2rem",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            fontSize: "0.875rem",
+            lineHeight: 1.5,
+            color: "#d4d4d8",
+          },
+        },
+        [releaseNotes],
+      ),
     o(DownloadTable, { groupedData, architectures }),
   ]);
 }
@@ -684,6 +706,7 @@ function VersionListPage({
       platforms: Set<PlatformIdentifier>;
       isDraft: boolean;
       isPrerelease: boolean;
+      notes: string;
     }
   >();
   const latestAssets = new Map<PlatformIdentifier, PlatformAssets>();
@@ -710,6 +733,7 @@ function VersionListPage({
           platforms: new Set([platform]),
           isDraft: asset.isDraft,
           isPrerelease: asset.isPrerelease,
+          notes: asset.notes || "",
         });
       } else {
         versions.get(asset.version)?.platforms.add(platform);
