@@ -16,17 +16,21 @@ function Layout({ children }: { children: ReactNode }) {
       }),
       o("link", {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css?family=Inter:400,500,600,700,800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap",
       }),
     ]),
     o(
       "body",
       {
         style: {
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           margin: 0,
           background: "#000",
           color: "#fff",
+          fontSize: "0.875rem",
+          lineHeight: 1.5,
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
         },
       },
       [
@@ -34,7 +38,7 @@ function Layout({ children }: { children: ReactNode }) {
           "main",
           {
             style: {
-              padding: "2rem",
+              padding: "2rem 1.5rem",
               margin: "0 auto",
               maxWidth: "768px",
             },
@@ -51,9 +55,11 @@ function Header({ children }: { children: string }) {
     "h1",
     {
       style: {
-        fontSize: "2rem",
-        fontWeight: 800,
-        marginBottom: "1rem",
+        fontSize: "1.5rem",
+        fontWeight: 600,
+        marginBottom: "1.25rem",
+        letterSpacing: "-0.025em",
+        lineHeight: 1.2,
       },
     },
     children,
@@ -65,10 +71,13 @@ function SubHeader({ children }: { children: string }) {
     "h2",
     {
       style: {
-        fontSize: "1.5rem",
-        fontWeight: 600,
-        marginBottom: "1rem",
-        color: "#888",
+        fontSize: "1.125rem",
+        fontWeight: 500,
+        marginTop: "2rem",
+        marginBottom: "1.25rem",
+        color: "#a1a1aa",
+        letterSpacing: "-0.025em",
+        lineHeight: 1.3,
       },
     },
     children,
@@ -81,9 +90,16 @@ function Link({ href, children }: { href: string; children: ReactNode }) {
     {
       href,
       style: {
-        color: "#0070f3",
+        color: "#60a5fa",
         textDecoration: "none",
-        transition: "color 0.2s ease",
+        fontSize: "0.875rem",
+        transition: "all 0.2s ease",
+        borderBottom: "1px solid transparent",
+        paddingBottom: "1px",
+        ":hover": {
+          color: "#93c5fd",
+          borderBottomColor: "#93c5fd",
+        },
       },
     },
     children,
@@ -99,22 +115,22 @@ function Badge({
 }) {
   const baseStyle = {
     display: "inline-block",
-    padding: "0.25rem 0.75rem",
-    borderRadius: "1rem",
+    padding: "0.25rem 0.625rem",
+    borderRadius: "9999px",
     fontSize: "0.75rem",
     fontWeight: 500,
     textTransform: "uppercase",
-    letterSpacing: "0.025em",
+    letterSpacing: "0.05em",
   };
 
   const variantStyles = {
     draft: {
-      background: "#2d2d2d",
-      color: "#888",
+      background: "#27272a",
+      color: "#a1a1aa",
     },
     prerelease: {
-      background: "#0d2231",
-      color: "#0070f3",
+      background: "#0c4a6e",
+      color: "#7dd3fc",
     },
   };
 
@@ -133,10 +149,12 @@ function PlatformCount({ count }: { count: number }) {
     {
       style: {
         display: "inline-block",
-        padding: "0.25rem 0.75rem",
-        borderRadius: "1rem",
-        fontSize: "0.875rem",
-        color: "#888",
+        padding: "0.25rem 0.625rem",
+        borderRadius: "9999px",
+        fontSize: "0.75rem",
+        fontWeight: 500,
+        color: "#a1a1aa",
+        background: "#27272a",
       },
     },
     `${count} platforms`,
@@ -189,14 +207,18 @@ function TableHeader({
     "th",
     {
       style: {
-        fontWeight: 600,
-        padding: "1rem",
+        fontWeight: 500,
+        padding: "0.75rem 1rem",
         textAlign: "left",
         verticalAlign: "top",
         position: "relative",
         wordBreak: "break-word",
-        borderBottom: "1px solid #333",
-        borderRight: "1px solid #333",
+        borderBottom: "1px solid #27272a",
+        borderRight: "1px solid #27272a",
+        fontSize: "0.75rem",
+        color: "#a1a1aa",
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
         ...style,
       },
     },
@@ -215,13 +237,15 @@ function TableCell({
     "td",
     {
       style: {
-        padding: "1rem",
+        padding: "0.75rem 1rem",
         textAlign: "left",
         verticalAlign: "top",
         position: "relative",
         wordBreak: "break-word",
-        borderBottom: "1px solid #333",
-        borderRight: "1px solid #333",
+        borderBottom: "1px solid #27272a",
+        borderRight: "1px solid #27272a",
+        fontSize: "0.875rem",
+        lineHeight: 1.5,
         ...style,
       },
     },
@@ -623,7 +647,10 @@ function VersionListPage({
   return o(Layout, {
     children: [
       o(Header, null, `${account}/${repository}`),
-      o(SubHeader, null, `Latest Version (${latestVersion})`),
+      o(SubHeader, null, [
+        "Latest Version ",
+        o("span", { style: { opacity: "50%" } }, `(${latestVersion})`),
+      ]),
       o(VersionPage, {
         version: latestVersion,
         assets: latestAssets,
