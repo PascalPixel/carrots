@@ -6,7 +6,7 @@ import { Configuration } from "./index.js";
 import { PlatformAssets } from "./cache.js";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
 
-function Layout({ children }: { children: ReactNode }) {
+function Layout({ children }: { children?: ReactNode }) {
   return o("html", { lang: "en" }, [
     o("head", null, [
       o("meta", { charset: "utf-8" }),
@@ -50,41 +50,41 @@ function Layout({ children }: { children: ReactNode }) {
   ]);
 }
 
-function Header({ children }: { children: string }) {
+function Header({ children }: { children?: ReactNode }) {
   return o(
     "h1",
     {
       style: {
-        fontSize: "1.5rem",
+        fontSize: "1.25rem",
         fontWeight: 600,
         marginBottom: "1.25rem",
         letterSpacing: "-0.025em",
-        lineHeight: 1.2,
+        lineHeight: 1.4,
       },
     },
     children,
   );
 }
 
-function SubHeader({ children }: { children: string }) {
+function SubHeader({ children }: { children?: ReactNode }) {
   return o(
     "h2",
     {
       style: {
-        fontSize: "1.125rem",
+        fontSize: "1rem",
         fontWeight: 500,
         marginTop: "2rem",
         marginBottom: "1.25rem",
         color: "#a1a1aa",
         letterSpacing: "-0.025em",
-        lineHeight: 1.3,
+        lineHeight: 1.4,
       },
     },
     children,
   );
 }
 
-function Link({ href, children }: { href: string; children: ReactNode }) {
+function Link({ href, children }: { href: string; children?: ReactNode }) {
   return o(
     "a",
     {
@@ -110,12 +110,12 @@ function Badge({
   variant,
   children,
 }: {
-  variant: "draft" | "prerelease";
-  children: string;
+  variant: "draft" | "prerelease" | "latest";
+  children?: ReactNode;
 }) {
   const baseStyle = {
     display: "inline-block",
-    padding: "0.25rem 0.625rem",
+    padding: "0.1rem 0.625rem",
     borderRadius: "9999px",
     fontSize: "0.75rem",
     fontWeight: 500,
@@ -131,6 +131,10 @@ function Badge({
     prerelease: {
       background: "#0c4a6e",
       color: "#7dd3fc",
+    },
+    latest: {
+      background: "#064e3b",
+      color: "#34d399",
     },
   };
 
@@ -149,15 +153,12 @@ function PlatformCount({ count }: { count: number }) {
     {
       style: {
         display: "inline-block",
-        padding: "0.25rem 0.625rem",
-        borderRadius: "9999px",
-        fontSize: "0.75rem",
+        fontSize: "0.875rem",
         fontWeight: 500,
         color: "#a1a1aa",
-        background: "#27272a",
       },
     },
-    `${count} platforms`,
+    [`${count} platforms`],
   );
 }
 
@@ -167,20 +168,13 @@ function Card({
   variant = "default",
 }: {
   href?: string;
-  children: ReactNode;
   variant?: "default" | "draft" | "prerelease";
+  children?: ReactNode;
 }) {
   const baseStyle = {
     background: "#111",
     border: "1px solid #333",
     borderRadius: "0.5rem",
-    padding:
-      typeof children === "object" &&
-      children !== null &&
-      "type" in children &&
-      children.type === "table"
-        ? 0
-        : "1.5rem",
     transition: "all 0.2s ease",
     color: "#fff",
     textDecoration: "none",
@@ -200,8 +194,8 @@ function TableHeader({
   children,
   style,
 }: {
-  children: ReactNode;
   style?: CSSProperties;
+  children?: ReactNode;
 }) {
   return o(
     "th",
@@ -216,7 +210,7 @@ function TableHeader({
         borderBottom: "1px solid #27272a",
         borderRight: "1px solid #27272a",
         fontSize: "0.75rem",
-        color: "#a1a1aa",
+        color: "#fff",
         textTransform: "uppercase",
         letterSpacing: "0.05em",
         ...style,
@@ -227,11 +221,13 @@ function TableHeader({
 }
 
 function TableCell({
-  children,
+  primary,
   style,
+  children,
 }: {
-  children?: ReactNode;
+  primary?: boolean;
   style?: CSSProperties;
+  children?: ReactNode;
 }) {
   return o(
     "td",
@@ -246,10 +242,11 @@ function TableCell({
         borderRight: "1px solid #27272a",
         fontSize: "0.875rem",
         lineHeight: 1.5,
+        color: primary ? "#fff" : "#a1a1aa",
         ...style,
       },
     },
-    children,
+    children ? children : [],
   );
 }
 
@@ -266,8 +263,13 @@ function VersionListTable({
     },
   ][];
 }) {
-  return o(Card, {
-    children: o(
+  // Find the latest stable version
+  const latestVersion = versions.find(
+    ([_, details]) => !details.isDraft && !details.isPrerelease,
+  )?.[0];
+
+  return o(Card, null, [
+    o(
       "table",
       {
         style: {
@@ -280,105 +282,170 @@ function VersionListTable({
       },
       [
         o("tr", { key: "header" }, [
-          o(TableHeader, {
-            key: "version",
-            style: {
-              borderTop: "none",
-              borderLeft: "none",
-              width: "30%",
+          o(
+            TableHeader,
+            {
+              key: "version",
+              style: {
+                borderTop: "none",
+                borderLeft: "none",
+                width: "30%",
+              },
             },
-            children: "Version",
-          }),
-          o(TableHeader, {
-            key: "date",
-            style: {
-              borderTop: "none",
-              width: "20%",
+            ["Version"],
+          ),
+          o(
+            TableHeader,
+            {
+              key: "date",
+              style: {
+                borderTop: "none",
+                width: "20%",
+              },
             },
-            children: "Release Date",
-          }),
-          o(TableHeader, {
-            key: "platforms",
-            style: {
-              borderTop: "none",
-              width: "20%",
+            ["Release Date"],
+          ),
+          o(
+            TableHeader,
+            {
+              key: "platforms",
+              style: {
+                borderTop: "none",
+                width: "20%",
+              },
             },
-            children: "Platforms",
-          }),
-          o(TableHeader, {
-            key: "status",
-            style: {
-              borderTop: "none",
-              borderRight: "none",
-              width: "30%",
+            ["Platforms"],
+          ),
+          o(
+            TableHeader,
+            {
+              key: "status",
+              style: {
+                borderTop: "none",
+                borderRight: "none",
+                width: "30%",
+              },
             },
-            children: "Status",
-          }),
+            ["Status"],
+          ),
         ]),
         ...versions.map(([version, details], rowIndex, array) =>
           o("tr", { key: version }, [
-            o(TableCell, {
-              key: "version",
-              style: {
-                borderLeft: "none",
-                borderBottom:
-                  rowIndex === array.length - 1 ? "none" : "1px solid #333",
-              },
-              children: o(Link, {
-                href: `/versions/${version}`,
-                children: version,
-              }),
-            }),
-            o(TableCell, {
-              key: "date",
-              style: {
-                borderBottom:
-                  rowIndex === array.length - 1 ? "none" : "1px solid #333",
-              },
-              children: new Date(details.date).toLocaleDateString(),
-            }),
-            o(TableCell, {
-              key: "platforms",
-              style: {
-                borderBottom:
-                  rowIndex === array.length - 1 ? "none" : "1px solid #333",
-              },
-              children: o(PlatformCount, { count: details.platforms.size }),
-            }),
-            o(TableCell, {
-              key: "status",
-              style: {
-                borderRight: "none",
-                borderBottom:
-                  rowIndex === array.length - 1 ? "none" : "1px solid #333",
-              },
-              children: o(
-                "div",
-                {
-                  style: {
-                    display: "flex",
-                    gap: "0.5rem",
-                    flexWrap: "wrap",
-                  },
+            o(
+              TableCell,
+              {
+                key: "version",
+                primary: true,
+                style: {
+                  borderLeft: "none",
+                  borderBottom:
+                    rowIndex === array.length - 1
+                      ? "none"
+                      : "1px solid #27272a",
                 },
-                [
-                  details.isDraft
-                    ? o(Badge, { variant: "draft", children: "Draft" })
-                    : null,
-                  details.isPrerelease
-                    ? o(Badge, {
-                        variant: "prerelease",
-                        children: "Pre-release",
-                      })
-                    : null,
-                ].filter(Boolean),
-              ),
-            }),
+              },
+              [
+                o(
+                  Link,
+                  {
+                    href: `/versions/${version}`,
+                  },
+                  [version],
+                ),
+              ],
+            ),
+            o(
+              TableCell,
+              {
+                key: "date",
+                style: {
+                  borderBottom:
+                    rowIndex === array.length - 1
+                      ? "none"
+                      : "1px solid #27272a",
+                },
+              },
+              [new Date(details.date).toLocaleDateString()],
+            ),
+            o(
+              TableCell,
+              {
+                key: "platforms",
+                style: {
+                  borderBottom:
+                    rowIndex === array.length - 1
+                      ? "none"
+                      : "1px solid #27272a",
+                },
+              },
+              [
+                o(PlatformCount, {
+                  count: details.platforms.size,
+                }),
+              ],
+            ),
+            o(
+              TableCell,
+              {
+                key: "status",
+                style: {
+                  borderRight: "none",
+                  borderBottom:
+                    rowIndex === array.length - 1
+                      ? "none"
+                      : "1px solid #27272a",
+                },
+              },
+              [
+                o(
+                  "div",
+                  {
+                    style: {
+                      display: "flex",
+                      gap: "0.5rem",
+                      flexWrap: "wrap",
+                    },
+                  },
+                  [
+                    version === latestVersion
+                      ? o(
+                          Badge,
+                          {
+                            key: "latest",
+                            variant: "latest",
+                          },
+                          ["Latest"],
+                        )
+                      : null,
+                    details.isDraft
+                      ? o(
+                          Badge,
+                          {
+                            key: "draft",
+                            variant: "draft",
+                          },
+                          ["Draft"],
+                        )
+                      : null,
+                    details.isPrerelease
+                      ? o(
+                          Badge,
+                          {
+                            key: "prerelease",
+                            variant: "prerelease",
+                          },
+                          ["Pre-release"],
+                        )
+                      : null,
+                  ].filter(Boolean),
+                ),
+              ],
+            ),
           ]),
         ),
       ],
     ),
-  });
+  ]);
 }
 
 function DownloadIcon() {
@@ -394,9 +461,11 @@ function DownloadIcon() {
       height: 12,
       fill: "currentColor",
     },
-    o("path", {
-      d: "M0 5h1v7H0V5zm15 0h1v7h-1V5zM7.52941176 0h1v7h-1V0zM4.66999817 4.66673379L5.33673196 4l3.33326621 3.33326621L8.00326438 8 4.66999817 4.66673379zM10.6732625 4l.6667338.66673379L8.00673013 8l-.66673379-.66673379L10.6732625 4zM0 12v-1h16v1H0z",
-    }),
+    [
+      o("path", {
+        d: "M0 5h1v7H0V5zm15 0h1v7h-1V5zM7.52941176 0h1v7h-1V0zM4.66999817 4.66673379L5.33673196 4l3.33326621 3.33326621L8.00326438 8 4.66999817 4.66673379zM10.6732625 4l.6667338.66673379L8.00673013 8l-.66673379-.66673379L10.6732625 4zM0 12v-1h16v1H0z",
+      }),
+    ],
   );
 }
 
@@ -407,10 +476,13 @@ function DownloadCell({
   asset: PlatformAssets;
   id: PlatformIdentifier;
 }) {
-  return o(Link, {
-    href: `/download/${id}`,
-    children: [o(DownloadIcon), asset.version],
-  });
+  return o(
+    Link,
+    {
+      href: `/download/${id}`,
+    },
+    [o(DownloadIcon), o("span", null, [asset.version])],
+  );
 }
 
 function PlatformName({
@@ -423,11 +495,11 @@ function PlatformName({
   return o("span", null, [
     name,
     " ",
-    o("span", { style: { opacity: "50%" } }, `(${extension})`),
+    o("span", { style: { opacity: "50%" } }, [`(${extension})`]),
   ]);
 }
 
-function formatPlatformName(filetypeOs: string): ReactNode {
+function FormatPlatformName({ filetypeOs }: { filetypeOs: string }): ReactNode {
   const platformMap: Record<string, [string, string]> = {
     "linux-deb": ["Debian", ".deb"],
     "linux-rpm": ["Fedora", ".rpm"],
@@ -458,8 +530,8 @@ function DownloadTable({
   >;
   architectures: Set<NodeJS.Architecture>;
 }) {
-  return o(Card, {
-    children: o(
+  return o(Card, null, [
+    o(
       "table",
       {
         style: {
@@ -472,39 +544,48 @@ function DownloadTable({
       },
       [
         o("tr", { key: "header" }, [
-          o(TableHeader, {
-            key: "empty",
-            style: {
-              borderTop: "none",
-              borderLeft: "none",
-              borderRight: "1px solid #333",
-            },
-            children: null,
-          }),
-          ...Array.from(architectures).map((arch, index, array) =>
-            o(TableHeader, {
-              key: arch,
+          o(
+            TableHeader,
+            {
+              key: "empty",
               style: {
                 borderTop: "none",
-                borderRight:
-                  index === array.length - 1 ? "none" : "1px solid #333",
+                borderLeft: "none",
+                borderRight: "1px solid #333",
               },
-              children: arch,
-            }),
+            },
+            [""],
+          ),
+          ...Array.from(architectures).map((arch, index, array) =>
+            o(
+              TableHeader,
+              {
+                key: arch,
+                style: {
+                  borderTop: "none",
+                  borderRight:
+                    index === array.length - 1 ? "none" : "1px solid #333",
+                },
+              },
+              [arch],
+            ),
           ),
         ]),
         ...Array.from(groupedData).map(
           ([filetypeOs, assets], rowIndex, array) =>
             o("tr", { key: filetypeOs }, [
-              o(TableCell, {
-                key: "platform",
-                style: {
-                  borderLeft: "none",
-                  borderBottom:
-                    rowIndex === array.length - 1 ? "none" : "1px solid #333",
+              o(
+                TableCell,
+                {
+                  key: "platform",
+                  style: {
+                    borderLeft: "none",
+                    borderBottom:
+                      rowIndex === array.length - 1 ? "none" : "1px solid #333",
+                  },
                 },
-                children: formatPlatformName(filetypeOs),
-              }),
+                [o(FormatPlatformName, { filetypeOs })],
+              ),
               ...Array.from(architectures).map((arch, colIndex, archArray) => {
                 const asset = assets.find((a) => a.arch === arch);
                 const isLastColumn = colIndex === archArray.length - 1;
@@ -520,26 +601,35 @@ function DownloadTable({
                           : "1px solid #333",
                     },
                   },
-                  asset
-                    ? o(DownloadCell, { asset: asset.asset, id: asset.id })
-                    : o("span", { style: { opacity: "50%" } }, "N/A"),
+                  [
+                    asset
+                      ? o(DownloadCell, {
+                          asset: asset.asset,
+                          id: asset.id,
+                        })
+                      : o("span", { style: { opacity: "50%" } }, ["N/A"]),
+                  ],
                 );
               }),
             ]),
         ),
       ],
     ),
-  });
+  ]);
 }
 
 function VersionPage({
   version,
   assets,
   showHeader = true,
+  account,
+  repository,
 }: {
   version: string;
   assets: Map<PlatformIdentifier, PlatformAssets>;
   showHeader?: boolean;
+  account: string;
+  repository: string;
 }) {
   // Group data by filetype+OS
   const groupedData: Map<
@@ -565,22 +655,16 @@ function VersionPage({
     });
   });
 
-  const table = o(DownloadTable, { groupedData, architectures });
-
   if (!showHeader) {
-    return table;
+    return o(DownloadTable, { groupedData, architectures });
   }
 
-  return o(Layout, {
-    children: [
-      o(Header, { children: `Version ${version}` }),
-      o(SubHeader, { children: "Downloads" }),
-      table,
-      o("p", null, [
-        o(Link, { href: "/", children: "← Back to all versions" }),
-      ]),
-    ],
-  });
+  return o(Layout, null, [
+    o("p", null, [o(Link, { href: "/" }, "← Back to all versions")]),
+    o(Header, null, [`${account}/${repository}`]),
+    o(SubHeader, null, [`Version ${version}`]),
+    o(DownloadTable, { groupedData, architectures }),
+  ]);
 }
 
 function VersionListPage({
@@ -644,22 +728,22 @@ function VersionListPage({
       ([_, details]) => !details.isDraft && !details.isPrerelease,
     )?.[0] || "";
 
-  return o(Layout, {
-    children: [
-      o(Header, null, `${account}/${repository}`),
-      o(SubHeader, null, [
-        "Latest Version ",
-        o("span", { style: { opacity: "50%" } }, `(${latestVersion})`),
-      ]),
-      o(VersionPage, {
-        version: latestVersion,
-        assets: latestAssets,
-        showHeader: false,
-      }),
-      o(SubHeader, null, "All Versions"),
-      o(VersionListTable, { versions: sortedVersions }),
-    ],
-  });
+  return o(Layout, null, [
+    o(Header, null, [`${account}/${repository}`]),
+    o(SubHeader, null, [
+      "Latest Version ",
+      o("span", { style: { opacity: "50%" } }, [`(${latestVersion})`]),
+    ]),
+    o(VersionPage, {
+      version: latestVersion,
+      assets: latestAssets,
+      showHeader: false,
+      account,
+      repository,
+    }),
+    o(SubHeader, null, ["All Versions"]),
+    o(VersionListTable, { versions: sortedVersions }),
+  ]);
 }
 
 export function makeVersionPage(
@@ -673,6 +757,8 @@ export function makeVersionPage(
       version,
       assets,
       showHeader,
+      account: config.account,
+      repository: config.repository,
     }),
   );
 }
