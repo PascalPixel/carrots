@@ -71,7 +71,7 @@ async function fetchAllReleases(
   config: Configuration,
 ): Promise<Map<PlatformIdentifier, PlatformAssets[]> | null> {
   const allReleases = new Map<PlatformIdentifier, PlatformAssets[]>();
-  const indexes = new Map<string, string>();
+  const releasesContent = new Map<string, string>();
 
   const account = encodeURIComponent(config.account || "");
   const repository = encodeURIComponent(config.repository || "");
@@ -91,16 +91,42 @@ async function fetchAllReleases(
 
   const releases: GitHubRelease[] = await releasesResponse.json();
 
-  for (const release of [...releases].reverse()) {
+  // First pass: collect all RELEASES content
+  for (const release of releases) {
     if (
       !(!semver.valid(release.tag_name) || release.draft || release.prerelease)
     ) {
       for (const asset of release.assets) {
         if (asset.name === "RELEASES") {
-          // Store in indexes
-          indexes.set(release.tag_name, asset.url);
-        } else {
-          // Store in allReleases
+          try {
+            const releasesResponse = await fetch(asset.url, {
+              headers: {
+                Accept: "application/octet-stream",
+                ...(config.token
+                  ? { Authorization: `Bearer ${config.token}` }
+                  : {}),
+              },
+            });
+            const content = await releasesResponse.text();
+            releasesContent.set(release.tag_name, content);
+          } catch (e) {
+            console.error(
+              `Failed to fetch RELEASES for ${release.tag_name}:`,
+              e,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Second pass: process all other assets
+  for (const release of [...releases].reverse()) {
+    if (
+      !(!semver.valid(release.tag_name) || release.draft || release.prerelease)
+    ) {
+      for (const asset of release.assets) {
+        if (asset.name !== "RELEASES") {
           const platforms = fileNameToPlatforms(asset.name);
           if (platforms) {
             for (const platform of platforms) {
@@ -116,6 +142,9 @@ async function fetchAllReleases(
                 api_url: asset.url,
                 content_type: asset.content_type,
                 size: Math.round((asset.size / 1000000) * 10) / 10,
+                RELEASES: platform.startsWith("win32")
+                  ? releasesContent.get(release.tag_name)
+                  : undefined,
               });
             }
           } else {
@@ -140,38 +169,15 @@ async function fetchAllReleases(
                   api_url: asset.url,
                   content_type: asset.content_type,
                   size: Math.round((asset.size / 1000000) * 10) / 10,
+                  RELEASES: platform.startsWith("win32")
+                    ? releasesContent.get(release.tag_name)
+                    : undefined,
                 });
               }
             } else {
               console.debug(`Unknown platform for ${asset.name}`);
             }
           }
-        }
-      }
-    }
-  }
-
-  // Add RELEASES content for Windows platforms
-  for (const key of [
-    PlatformIdentifier.WIN32_X64,
-    PlatformIdentifier.WIN32_IA32,
-    PlatformIdentifier.WIN32_ARM64,
-  ]) {
-    const platformReleases = allReleases.get(key);
-    if (platformReleases) {
-      for (const asset of platformReleases) {
-        if (indexes.has(asset.version)) {
-          const indexURL = indexes.get(asset.version) || "";
-          const indexResponse = await fetch(indexURL, {
-            headers: {
-              Accept: "application/octet-stream",
-              ...(config.token
-                ? { Authorization: `Bearer ${config.token}` }
-                : {}),
-            },
-          });
-          const content = await indexResponse.text();
-          asset.RELEASES = content;
         }
       }
     }
