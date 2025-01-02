@@ -59,7 +59,7 @@ class ReleaseCache {
   }
 }
 
-const releaseCache = new ReleaseCache();
+export const releaseCache = new ReleaseCache();
 
 // GitHub API helpers
 async function fetchGitHubReleases(

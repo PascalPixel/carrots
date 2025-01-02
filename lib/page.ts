@@ -1,7 +1,191 @@
 import { PlatformAssets } from "./cache.js";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
+import semver from "semver";
 
-export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
+// Common styles for both pages
+const commonStyles = `
+  body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    background: #000;
+    color: #fff;
+  }
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #888;
+  }
+  a {
+    color: #0070f3;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  a:hover {
+    color: #0070f3;
+    text-decoration: underline;
+  }
+  main {
+    padding: 2rem;
+    margin: 0 auto;
+    max-width: 768px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    table-layout: fixed;
+  }
+  th {
+    font-weight: 600;
+    background: #111;
+  }
+  th, td {
+    border: 1px solid #333;
+    padding: 1rem;
+    text-align: left;
+    vertical-align: top;
+    position: relative;
+    word-break: break-word;
+  }
+  .version-list {
+    display: grid;
+    gap: 1rem;
+  }
+  .version-card {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+  }
+  .version-card:hover {
+    border-color: #0070f3;
+  }
+  .version-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+  }
+  .version-date {
+    color: #888;
+    font-size: 0.875rem;
+  }
+  .download-icon {
+    display: inline-block;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  .platform-count {
+    display: inline-block;
+    background: #222;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    color: #888;
+    margin-left: 0.5rem;
+  }
+`;
+
+// Common HTML wrapper
+function wrapHtml(content: string) {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700,800&display=swap">
+        <style>${commonStyles}</style>
+    </head>
+    <body>
+        <main>${content}</main>
+    </body>
+    </html>
+  `;
+}
+
+// Create version list page
+export function makeVersionListPage(
+  releases: Map<PlatformIdentifier, PlatformAssets[]>,
+) {
+  // Get unique versions and their details
+  const versions = new Map<
+    string,
+    { date: string; platforms: Set<PlatformIdentifier> }
+  >();
+
+  // Get latest version assets
+  const latestAssets = new Map<PlatformIdentifier, PlatformAssets>();
+  for (const [platform, assets] of releases.entries()) {
+    if (assets.length > 0) {
+      const latestAsset = assets.reduce((latest, current) =>
+        semver.gt(current.version, latest.version) ? current : latest,
+      );
+      latestAssets.set(platform, latestAsset);
+    }
+
+    for (const asset of assets) {
+      if (!versions.has(asset.version)) {
+        versions.set(asset.version, {
+          date: asset.date,
+          platforms: new Set([platform]),
+        });
+      } else {
+        versions.get(asset.version)?.platforms.add(platform);
+      }
+    }
+  }
+
+  // Sort versions by semver
+  const sortedVersions = Array.from(versions.entries()).sort(
+    (a, b) => -a[0].localeCompare(b[0], undefined, { numeric: true }),
+  );
+
+  // Get the latest version number
+  const latestVersion = sortedVersions[0]?.[0] || "";
+
+  // Create latest version table
+  const latestTable = makeVersionPage(latestVersion, latestAssets, false);
+
+  // Create version cards
+  const versionCards = sortedVersions
+    .map(
+      ([version, details]) => `
+    <a href="/versions/${version}" class="version-card">
+      <div class="version-title">
+        Version ${version}
+        <span class="platform-count">${details.platforms.size} platforms</span>
+      </div>
+      <div class="version-date">Released ${new Date(details.date).toLocaleDateString()}</div>
+    </a>
+  `,
+    )
+    .join("");
+
+  const content = `
+    <h1>Latest Version (${latestVersion})</h1>
+    ${latestTable}
+    <h2>All Versions</h2>
+    <div class="version-list">
+      ${versionCards}
+    </div>
+  `;
+
+  return wrapHtml(content);
+}
+
+// Create version details page
+export function makeVersionPage(
+  version: string,
+  assets: Map<PlatformIdentifier, PlatformAssets>,
+  showHeader = true,
+) {
   // Step 1: Group data by filetype+OS
   const groupedData: Map<
     `${NodeJS.Platform}-${string}`,
@@ -11,7 +195,8 @@ export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
       asset: PlatformAssets;
     }[]
   > = new Map();
-  [...latest.entries()].forEach(([id, asset]) => {
+
+  [...assets.entries()].forEach(([id, asset]) => {
     const key: `${NodeJS.Platform}-${string}` = `${PLATFORMS[id].os}-${PLATFORMS[id].ext}`;
     if (!groupedData.has(key)) groupedData.set(key, []);
     groupedData.get(key)?.push({ id, arch: PLATFORMS[id].arch, asset });
@@ -21,10 +206,7 @@ export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
   const architectures: Set<NodeJS.Architecture> = new Set();
   groupedData.forEach((assets) => {
     assets.forEach((asset) => {
-      if (asset.arch) {
-        // Assuming each asset has an 'arch' property
-        architectures.add(asset.arch);
-      }
+      if (asset.arch) architectures.add(asset.arch);
     });
   });
 
@@ -36,7 +218,7 @@ export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
         return asset
           ? `
               <a href="/download/${asset.id}">
-                <svg width="16" height="12" fill="currentColor">
+                <svg class="download-icon" width="16" height="12" fill="currentColor">
                   <path d="M0 5h1v7H0V5zm15 0h1v7h-1V5zM7.52941176 0h1v7h-1V0zM4.66999817 4.66673379L5.33673196 4l3.33326621 3.33326621L8.00326438 8 4.66999817 4.66673379zM10.6732625 4l.6667338.66673379L8.00673013 8l-.66673379-.66673379L10.6732625 4zM0 12v-1h16v1H0z"></path>
                 </svg>
                 ${asset.asset.version}
@@ -76,67 +258,28 @@ export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
     })
     .join("\n");
 
-  const html = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter">
-        <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background: #000;
-            color: #fff;
-        }
-        h1 {
-            font-size: 2rem;
-        }
-        a {
-            color: #ff8849;
-            text-decoration: none;
-        }
-        main {
-            padding: 2rem;
-            margin: 0 auto;
-            max-width: 768px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 2rem;
-            table-layout: fixed;
-        }
-        th {
-            font-weight: bold;
-            background: #111;
-        }
-        th, td {
-            border: 1px solid #444;
-            padding: 1rem;
-            text-align: left;
-            vertical-align: top;
-            position: relative;
-            word-break: break-word;
-        }
-        </style>
-    </head>
-    <body>
-        <main>
-        <table>
-            <tr>
-            <th style="border-top-color: transparent; border-left-color: transparent; background: transparent;">
-            ${Array.from(architectures)
-              .map((arch) => `<th>${arch}</th>`)
-              .join("")}
-            </tr>
-            ${rows}
-        </table>
-        </main>
-    </body>
-    </html>
-    `;
+  const table = `
+    <table>
+      <tr>
+        <th style="border-top-color: transparent; border-left-color: transparent; background: transparent;"></th>
+        ${Array.from(architectures)
+          .map((arch) => `<th>${arch}</th>`)
+          .join("")}
+      </tr>
+      ${rows}
+    </table>
+  `;
 
-  return html;
+  if (!showHeader) {
+    return table;
+  }
+
+  const content = `
+    <h1>Version ${version}</h1>
+    <h2>Downloads</h2>
+    ${table}
+    <p><a href="/">← Back to all versions</a></p>
+  `;
+
+  return wrapHtml(content);
 }
