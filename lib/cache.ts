@@ -3,8 +3,9 @@ import semver from "semver";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
 import { Configuration } from "./index.js";
 
-let cachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
-let backupCachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
+let cachedReleases: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
+let backupCachedReleases: Map<PlatformIdentifier, PlatformAssets[]> | null =
+  null;
 let lastUpdated: number = 0;
 const cacheDuration = 1000 * 60 * 5; /* 5 minutes */
 
@@ -16,11 +17,29 @@ export async function getLatest(config: Configuration) {
   let date: string | undefined = "";
 
   try {
-    latest = await getLatestRelease(config);
-    if (latest) {
-      platforms = Array.from(latest.keys());
-      version = latest.get(platforms[0])?.version;
-      date = latest.get(platforms[0])?.date;
+    const releases = await getAllReleases(config);
+    if (releases) {
+      latest = new Map();
+      platforms = Array.from(releases.keys());
+
+      // Get latest version for each platform
+      for (const platform of platforms) {
+        const platformReleases = releases.get(platform);
+        if (platformReleases && platformReleases.length > 0) {
+          // Sort by version and get the latest
+          const latestRelease = platformReleases.reduce((latest, current) => {
+            return semver.gt(current.version, latest.version)
+              ? current
+              : latest;
+          }, platformReleases[0]);
+          latest.set(platform, latestRelease);
+        }
+      }
+
+      if (platforms.length > 0 && latest.has(platforms[0])) {
+        version = latest.get(platforms[0])?.version;
+        date = latest.get(platforms[0])?.date;
+      }
     }
   } catch (e) {
     console.error(e);
@@ -30,28 +49,28 @@ export async function getLatest(config: Configuration) {
   return { latest, platforms, version, date };
 }
 
-const getLatestRelease = async (config: Configuration) => {
+const getAllReleases = async (config: Configuration) => {
   const now = Date.now();
 
-  if (!cachedLatest || now - lastUpdated > cacheDuration) {
-    const fetchedLatest = await fetchLatestRelease(config);
-    if (fetchedLatest) {
-      cachedLatest = fetchedLatest;
-      backupCachedLatest = fetchedLatest;
+  if (!cachedReleases || now - lastUpdated > cacheDuration) {
+    const fetchedReleases = await fetchAllReleases(config);
+    if (fetchedReleases) {
+      cachedReleases = fetchedReleases;
+      backupCachedReleases = fetchedReleases;
       lastUpdated = now;
-    } else if (backupCachedLatest) {
-      cachedLatest = backupCachedLatest;
+    } else if (backupCachedReleases) {
+      cachedReleases = backupCachedReleases;
     }
   }
 
-  return cachedLatest;
+  return cachedReleases;
 };
 
-// Fetches the latest release information from GitHub
-async function fetchLatestRelease(
+// Fetches all release information from GitHub
+async function fetchAllReleases(
   config: Configuration,
-): Promise<Map<PlatformIdentifier, PlatformAssets> | null> {
-  const latest = new Map<PlatformIdentifier, PlatformAssets>();
+): Promise<Map<PlatformIdentifier, PlatformAssets[]> | null> {
+  const allReleases = new Map<PlatformIdentifier, PlatformAssets[]>();
   const indexes = new Map<string, string>();
 
   const account = encodeURIComponent(config.account || "");
@@ -81,11 +100,14 @@ async function fetchLatestRelease(
           // Store in indexes
           indexes.set(release.tag_name, asset.url);
         } else {
-          // Store in latest
+          // Store in allReleases
           const platforms = fileNameToPlatforms(asset.name);
           if (platforms) {
             for (const platform of platforms) {
-              latest.set(platform, {
+              if (!allReleases.has(platform)) {
+                allReleases.set(platform, []);
+              }
+              allReleases.get(platform)?.push({
                 name: release.name,
                 notes: release.body,
                 version: release.tag_name,
@@ -106,7 +128,10 @@ async function fetchLatestRelease(
             const platforms = fileNameToPlatforms(patchedName);
             if (platforms) {
               for (const platform of platforms) {
-                latest.set(platform, {
+                if (!allReleases.has(platform)) {
+                  allReleases.set(platform, []);
+                }
+                allReleases.get(platform)?.push({
                   name: release.name,
                   notes: release.body,
                   version: release.tag_name,
@@ -126,26 +151,33 @@ async function fetchLatestRelease(
     }
   }
 
+  // Add RELEASES content for Windows platforms
   for (const key of [
     PlatformIdentifier.WIN32_X64,
     PlatformIdentifier.WIN32_IA32,
     PlatformIdentifier.WIN32_ARM64,
   ]) {
-    const asset = latest.get(key);
-    if (asset && indexes.has(asset.version)) {
-      const indexURL = indexes.get(asset.version) || "";
-      const indexResponse = await fetch(indexURL, {
-        headers: {
-          Accept: "application/octet-stream",
-          ...(config.token ? { Authorization: `Bearer ${config.token}` } : {}),
-        },
-      });
-      const content = await indexResponse.text();
-      asset.RELEASES = content;
+    const platformReleases = allReleases.get(key);
+    if (platformReleases) {
+      for (const asset of platformReleases) {
+        if (indexes.has(asset.version)) {
+          const indexURL = indexes.get(asset.version) || "";
+          const indexResponse = await fetch(indexURL, {
+            headers: {
+              Accept: "application/octet-stream",
+              ...(config.token
+                ? { Authorization: `Bearer ${config.token}` }
+                : {}),
+            },
+          });
+          const content = await indexResponse.text();
+          asset.RELEASES = content;
+        }
+      }
     }
   }
 
-  return latest;
+  return allReleases;
 }
 
 function fileNameToPlatforms(fileName: string): PlatformIdentifier[] {
@@ -193,4 +225,21 @@ export interface PlatformAssets {
   api_url: string;
   RELEASES?: string;
   content_type: string;
+}
+
+// Get a specific version for a platform
+export async function getVersion(
+  config: Configuration,
+  platform: PlatformIdentifier,
+  version: string,
+) {
+  const releases = await getAllReleases(config);
+  if (!releases) return null;
+
+  const platformReleases = releases.get(platform);
+  if (!platformReleases) return null;
+
+  return (
+    platformReleases.find((release) => release.version === version) || null
+  );
 }
