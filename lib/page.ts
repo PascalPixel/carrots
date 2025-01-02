@@ -71,6 +71,10 @@ const commonStyles = `
     font-size: 1.25rem;
     font-weight: 600;
     margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
   .version-date {
     color: #888;
@@ -88,7 +92,33 @@ const commonStyles = `
     border-radius: 1rem;
     font-size: 0.875rem;
     color: #888;
-    margin-left: 0.5rem;
+  }
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+  .badge-draft {
+    background: #2d2d2d;
+    color: #888;
+  }
+  .badge-prerelease {
+    background: #0d2231;
+    color: #0070f3;
+  }
+  .version-card.is-draft {
+    opacity: 0.7;
+  }
+  .version-card.is-prerelease {
+    background: #0d2231;
+    border-color: #0d2231;
+  }
+  .version-card.is-prerelease:hover {
+    border-color: #0070f3;
   }
 `;
 
@@ -117,17 +147,27 @@ export function makeVersionListPage(
   // Get unique versions and their details
   const versions = new Map<
     string,
-    { date: string; platforms: Set<PlatformIdentifier> }
+    {
+      date: string;
+      platforms: Set<PlatformIdentifier>;
+      isDraft: boolean;
+      isPrerelease: boolean;
+    }
   >();
 
   // Get latest version assets
   const latestAssets = new Map<PlatformIdentifier, PlatformAssets>();
   for (const [platform, assets] of releases.entries()) {
     if (assets.length > 0) {
-      const latestAsset = assets.reduce((latest, current) =>
-        semver.gt(current.version, latest.version) ? current : latest,
+      const stableAssets = assets.filter(
+        (asset) => !asset.isDraft && !asset.isPrerelease,
       );
-      latestAssets.set(platform, latestAsset);
+      if (stableAssets.length > 0) {
+        const latestAsset = stableAssets.reduce((latest, current) =>
+          semver.gt(current.version, latest.version) ? current : latest,
+        );
+        latestAssets.set(platform, latestAsset);
+      }
     }
 
     for (const asset of assets) {
@@ -135,6 +175,8 @@ export function makeVersionListPage(
         versions.set(asset.version, {
           date: asset.date,
           platforms: new Set([platform]),
+          isDraft: asset.isDraft,
+          isPrerelease: asset.isPrerelease,
         });
       } else {
         versions.get(asset.version)?.platforms.add(platform);
@@ -147,8 +189,11 @@ export function makeVersionListPage(
     (a, b) => -a[0].localeCompare(b[0], undefined, { numeric: true }),
   );
 
-  // Get the latest version number
-  const latestVersion = sortedVersions[0]?.[0] || "";
+  // Get the latest version number (excluding drafts and prereleases)
+  const latestVersion =
+    sortedVersions.find(
+      ([_, details]) => !details.isDraft && !details.isPrerelease,
+    )?.[0] || "";
 
   // Create latest version table
   const latestTable = makeVersionPage(latestVersion, latestAssets, false);
@@ -157,9 +202,11 @@ export function makeVersionListPage(
   const versionCards = sortedVersions
     .map(
       ([version, details]) => `
-    <a href="/versions/${version}" class="version-card">
+    <a href="/versions/${version}" class="version-card${details.isDraft ? " is-draft" : ""}${details.isPrerelease ? " is-prerelease" : ""}">
       <div class="version-title">
         Version ${version}
+        ${details.isDraft ? '<span class="badge badge-draft">Draft</span>' : ""}
+        ${details.isPrerelease ? '<span class="badge badge-prerelease">Pre-release</span>' : ""}
         <span class="platform-count">${details.platforms.size} platforms</span>
       </div>
       <div class="version-date">Released ${new Date(details.date).toLocaleDateString()}</div>

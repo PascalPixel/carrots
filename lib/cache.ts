@@ -31,6 +31,8 @@ export interface PlatformAssets {
   api_url: string;
   RELEASES?: string;
   content_type: string;
+  isDraft: boolean;
+  isPrerelease: boolean;
 }
 
 // Cache management
@@ -145,6 +147,8 @@ function createAssetData(
     api_url: asset.url,
     content_type: asset.content_type,
     size: Math.round((asset.size / 1000000) * 10) / 10,
+    isDraft: release.draft,
+    isPrerelease: release.prerelease,
   };
 }
 
@@ -162,8 +166,7 @@ async function fetchAllReleases(
   // Process releases in reverse chronological order
   for (let i = releases.length - 1; i >= 0; i--) {
     const release = releases[i];
-    if (!semver.valid(release.tag_name) || release.draft || release.prerelease)
-      continue;
+    if (!semver.valid(release.tag_name)) continue;
 
     // Fetch RELEASES content in parallel
     const releasesAsset = release.assets.find(
@@ -232,21 +235,30 @@ export async function getLatest(config: Configuration) {
       latest = new Map();
       platforms = Array.from(releases.keys());
 
-      // Get latest version for each platform
+      // Get latest version for each platform (excluding drafts and prereleases)
       for (const platform of platforms) {
         const platformReleases = releases.get(platform);
         if (platformReleases?.length) {
-          const latestRelease = platformReleases.reduce((latest, current) =>
-            semver.gt(current.version, latest.version) ? current : latest,
+          const stableReleases = platformReleases.filter(
+            (release) => !release.isDraft && !release.isPrerelease,
           );
-          latest.set(platform, latestRelease);
+          if (stableReleases.length > 0) {
+            const latestRelease = stableReleases.reduce((latest, current) =>
+              semver.gt(current.version, latest.version) ? current : latest,
+            );
+            latest.set(platform, latestRelease);
+          }
         }
       }
 
-      if (platforms.length && latest.has(platforms[0])) {
-        const firstPlatform = latest.get(platforms[0]);
-        version = firstPlatform?.version;
-        date = firstPlatform?.date;
+      // Find the first platform with a stable release to get version and date
+      for (const platform of platforms) {
+        const latestForPlatform = latest.get(platform);
+        if (latestForPlatform) {
+          version = latestForPlatform.version;
+          date = latestForPlatform.date;
+          break;
+        }
       }
     }
   } catch (e) {
@@ -267,7 +279,10 @@ export async function getVersion(
   const platformReleases = releases.get(platform);
   if (!platformReleases) return null;
 
-  return (
-    platformReleases.find((release) => release.version === version) || null
+  // Only return non-draft, non-prerelease versions for the API
+  const release = platformReleases.find(
+    (release) =>
+      release.version === version && !release.isDraft && !release.isPrerelease,
   );
+  return release || null;
 }
