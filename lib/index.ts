@@ -2,9 +2,9 @@ import http from "http";
 import semver from "semver";
 import Router from "find-my-way";
 
-import { getLatest, releaseCache, PlatformAssets } from "./cache.js";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
 import { makeVersionListPage, makeVersionPage } from "./page.js";
+import { getLatest, releaseCache, PlatformAssets } from "./cache.js";
 
 // Main function to handle routing and responses
 export async function carrots(config: Configuration) {
@@ -28,7 +28,7 @@ export async function carrots(config: Configuration) {
       return;
     }
 
-    const html = makeVersionListPage(releases);
+    const html = makeVersionListPage(config, releases);
 
     // Send response
     res.statusCode = 200;
@@ -78,7 +78,7 @@ export async function carrots(config: Configuration) {
       return;
     }
 
-    const html = makeVersionPage(params.version, versionAssets);
+    const html = makeVersionPage(config, params.version, versionAssets);
 
     // Send response
     res.statusCode = 200;
