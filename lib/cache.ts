@@ -187,7 +187,7 @@ async function fetchAllReleases(
 
       const platforms = tryMatchPlatform(asset.name);
       if (!platforms.length) {
-        console.debug(`Unknown platform for ${asset.name}`);
+        console.warn(`Unknown platform for ${asset.name}`);
         continue;
       }
 
