@@ -8,7 +8,8 @@
   "main": "lib/index.ts",
   "scripts": {
     "preview": "nodemon --watch lib --ext ts --exec vercel dev",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "prettier --config .prettierrc.json -c ./**/*.ts && eslint --config .eslintrc.json ./**/*.ts && tsc --noEmit",
     "format": "prettier --config .prettierrc.json -w ./**/*.ts"
   },
@@ -19,7 +20,6 @@
     "semver": "^7.6.3"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.10.3",
     "@types/semver": "^7.5.8",
     "@typescript-eslint/eslint-plugin": "^8.19.0",
@@ -27,11 +27,10 @@
     "async-listen": "^3.0.1",
     "cross-env": "^7.0.3",
     "eslint": "<9",
-    "jest": "^29.7.0",
     "nodemon": "^3.1.9",
     "prettier": "^3.4.2",
-    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^1.3.1"
   }
 }
