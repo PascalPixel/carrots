@@ -1,7 +1,6 @@
 import http from "http";
 import dotenv from "dotenv";
 import { listen } from "async-listen";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 import { carrots } from "./index.js";
 
