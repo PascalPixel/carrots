@@ -100,6 +100,18 @@ function Badge({
   );
 }
 
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
+
 function PlatformCount({ count }: { count: number }) {
   return o(
     "span",
@@ -242,7 +254,7 @@ function VersionListTable({
               style: {
                 borderTop: "none",
                 borderLeft: "none",
-                width: "30%",
+                width: "25%",
               },
             },
             ["Version"],
@@ -250,13 +262,13 @@ function VersionListTable({
           o(
             TableHeader,
             {
-              key: "date",
+              key: "status",
               style: {
                 borderTop: "none",
                 width: "20%",
               },
             },
-            ["Release Date"],
+            ["Status"],
           ),
           o(
             TableHeader,
@@ -264,7 +276,7 @@ function VersionListTable({
               key: "platforms",
               style: {
                 borderTop: "none",
-                width: "20%",
+                width: "15%",
               },
             },
             ["Platforms"],
@@ -272,14 +284,14 @@ function VersionListTable({
           o(
             TableHeader,
             {
-              key: "status",
+              key: "date",
               style: {
                 borderTop: "none",
                 borderRight: "none",
-                width: "30%",
+                width: "40%",
               },
             },
-            ["Status"],
+            ["Release Date"],
           ),
         ]),
         ...versions.map(([version, details], rowIndex, array) =>
@@ -310,39 +322,8 @@ function VersionListTable({
             o(
               TableCell,
               {
-                key: "date",
-                style: {
-                  borderBottom:
-                    rowIndex === array.length - 1
-                      ? "none"
-                      : "1px solid #27272a",
-                },
-              },
-              [new Date(details.date).toLocaleDateString()],
-            ),
-            o(
-              TableCell,
-              {
-                key: "platforms",
-                style: {
-                  borderBottom:
-                    rowIndex === array.length - 1
-                      ? "none"
-                      : "1px solid #27272a",
-                },
-              },
-              [
-                o(PlatformCount, {
-                  count: details.platforms.size,
-                }),
-              ],
-            ),
-            o(
-              TableCell,
-              {
                 key: "status",
                 style: {
-                  borderRight: "none",
                   borderBottom:
                     rowIndex === array.length - 1
                       ? "none"
@@ -394,6 +375,37 @@ function VersionListTable({
                 ),
               ],
             ),
+            o(
+              TableCell,
+              {
+                key: "platforms",
+                style: {
+                  borderBottom:
+                    rowIndex === array.length - 1
+                      ? "none"
+                      : "1px solid #27272a",
+                },
+              },
+              [
+                o(PlatformCount, {
+                  count: details.platforms.size,
+                }),
+              ],
+            ),
+            o(
+              TableCell,
+              {
+                key: "date",
+                style: {
+                  borderRight: "none",
+                  borderBottom:
+                    rowIndex === array.length - 1
+                      ? "none"
+                      : "1px solid #27272a",
+                },
+              },
+              [formatDate(details.date)],
+            ),
           ]),
         ),
       ],
@@ -405,6 +417,7 @@ function DownloadIcon() {
   return o(
     "svg",
     {
+      key: "svg",
       style: {
         display: "inline-block",
         marginRight: "0.5rem",
@@ -416,6 +429,7 @@ function DownloadIcon() {
     },
     [
       o("path", {
+        key: "path",
         d: "M0 5h1v7H0V5zm15 0h1v7h-1V5zM7.52941176 0h1v7h-1V0zM4.66999817 4.66673379L5.33673196 4l3.33326621 3.33326621L8.00326438 8 4.66999817 4.66673379zM10.6732625 4l.6667338.66673379L8.00673013 8l-.66673379-.66673379L10.6732625 4zM0 12v-1h16v1H0z",
       }),
     ],
@@ -434,7 +448,10 @@ function DownloadCell({
     {
       href: `/download/${id}`,
     },
-    [o(DownloadIcon), o("span", null, [asset.version])],
+    [
+      o(DownloadIcon, { key: "icon" }),
+      o("span", { key: "version" }, [asset.version]),
+    ],
   );
 }
 
@@ -446,13 +463,15 @@ function PlatformName({
   extension: string;
 }) {
   return o("span", null, [
-    name,
+    o("span", { key: "name" }, name),
     " ",
-    o("span", { style: { opacity: "50%" } }, [`(${extension})`]),
+    o("span", { key: "extension", style: { opacity: "50%" } }, [
+      `(${extension})`,
+    ]),
   ]);
 }
 
-function FormatPlatformName({ filetypeOs }: { filetypeOs: string }): ReactNode {
+function FormatPlatformName({ filetypeOs }: { filetypeOs: string }) {
   const platformMap: Record<string, [string, string]> = {
     "linux-deb": ["Debian", ".deb"],
     "linux-rpm": ["Fedora", ".rpm"],
@@ -466,7 +485,9 @@ function FormatPlatformName({ filetypeOs }: { filetypeOs: string }): ReactNode {
   };
 
   const [name, extension] = platformMap[filetypeOs] || [filetypeOs, ""];
-  return extension ? o(PlatformName, { name, extension }) : name;
+  return extension
+    ? o(PlatformName, { key: filetypeOs, name, extension })
+    : o("span", { key: filetypeOs }, name);
 }
 
 function DownloadTable({
@@ -537,7 +558,7 @@ function DownloadTable({
                       rowIndex === array.length - 1 ? "none" : "1px solid #333",
                   },
                 },
-                [o(FormatPlatformName, { filetypeOs })],
+                [o(FormatPlatformName, { key: filetypeOs, filetypeOs })],
               ),
               ...Array.from(architectures).map((arch, colIndex, archArray) => {
                 const asset = assets.find((a) => a.arch === arch);
@@ -557,10 +578,13 @@ function DownloadTable({
                   [
                     asset
                       ? o(DownloadCell, {
+                          key: `${asset.id}-${asset.arch}`,
                           asset: asset.asset,
                           id: asset.id,
                         })
-                      : o("span", { style: { opacity: "50%" } }, ["N/A"]),
+                      : o("span", { key: "na", style: { opacity: "50%" } }, [
+                          "N/A",
+                        ]),
                   ],
                 );
               }),
@@ -573,13 +597,15 @@ function DownloadTable({
 
 function Layout({ children }: { children?: ReactNode }) {
   return o("html", { lang: "en" }, [
-    o("head", null, [
-      o("meta", { charset: "utf-8" }),
+    o("head", { key: "head" }, [
+      o("meta", { key: "charset", charSet: "utf-8" }),
       o("meta", {
+        key: "viewport",
         name: "viewport",
         content: "width=device-width, initial-scale=1",
       }),
       o("link", {
+        key: "fonts",
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap",
       }),
@@ -587,6 +613,7 @@ function Layout({ children }: { children?: ReactNode }) {
     o(
       "body",
       {
+        key: "body",
         style: {
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           margin: 0,
@@ -602,6 +629,7 @@ function Layout({ children }: { children?: ReactNode }) {
         o(
           "main",
           {
+            key: "main",
             style: {
               padding: "2rem 1.5rem",
               margin: "0 auto",
@@ -704,17 +732,20 @@ function HomePage({
   });
 
   return o(Layout, null, [
-    o("div", null, [
+    o("div", { key: "header" }, [
       o(Header, null, [`${config.account}/${config.repository}`]),
       o(SubHeader, null, [
         "Latest Version ",
-        o("span", { style: { opacity: "50%" } }, [`(${latestVersion})`]),
+        o("span", { key: "version", style: { opacity: "50%" } }, [
+          `(${latestVersion})`,
+        ]),
       ]),
     ]),
-    o(DownloadTable, { groupedData, architectures }),
+    o(DownloadTable, { key: "downloads", groupedData, architectures }),
     o(
       "div",
       {
+        key: "footer",
         style: {
           marginTop: "2rem",
           textAlign: "center",
@@ -767,12 +798,14 @@ function VersionsPage({
   );
 
   return o(Layout, null, [
-    o("div", null, [
-      o("p", null, [o(Link, { href: "/" }, ["← Back to latest version"])]),
-      o(Header, null, [`${config.account}/${config.repository}`]),
-      o(SubHeader, null, ["All Versions"]),
+    o("div", { key: "header" }, [
+      o("p", { key: "back" }, [
+        o(Link, { href: "/" }, ["← Back to latest version"]),
+      ]),
+      o(Header, { key: "title" }, [`${config.account}/${config.repository}`]),
+      o(SubHeader, { key: "subtitle" }, ["All Versions"]),
     ]),
-    o(VersionListTable, { versions: sortedVersions }),
+    o(VersionListTable, { key: "versions", versions: sortedVersions }),
   ]);
 }
 
