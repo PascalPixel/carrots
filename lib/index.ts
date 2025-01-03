@@ -2,15 +2,19 @@ import http from "http";
 import semver from "semver";
 import Router from "find-my-way";
 
-import { getLatest } from "./cache.js";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
-import { makePage } from "./page.js";
+import {
+  renderHomePage,
+  renderVersionPage,
+  renderVersionsPage,
+} from "./page.js";
+import { getLatest, releaseCache, PlatformAssets } from "./cache.js";
 
 // Main function to handle routing and responses
 export async function carrots(config: Configuration) {
   const router = Router();
 
-  // Overview of all downloads
+  // Overview of all versions
   router.get("/", async (req, res, params) => {
     const { latest, platforms, version, date } = await getLatest(config);
     if (!latest) {
@@ -20,7 +24,84 @@ export async function carrots(config: Configuration) {
       return;
     }
 
-    const html = makePage(latest);
+    const releases = await releaseCache.get(config);
+    if (!releases) {
+      res.statusCode = 500;
+      res.statusMessage = "Failed to fetch releases";
+      res.end();
+      return;
+    }
+
+    const html = renderHomePage(config, releases);
+
+    // Send response
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/html");
+    res.end(html);
+    return;
+  });
+
+  // All versions page without latest version table
+  router.get("/versions", async (req, res, params) => {
+    const releases = await releaseCache.get(config);
+    if (!releases) {
+      res.statusCode = 500;
+      res.statusMessage = "Failed to fetch releases";
+      res.end();
+      return;
+    }
+
+    const html = renderVersionsPage(config, releases);
+
+    // Send response
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/html");
+    res.end(html);
+    return;
+  });
+
+  // Version-specific page
+  router.get("/versions/:version", async (req, res, params) => {
+    const {
+      latest,
+      platforms,
+      version: latestVersion,
+      date,
+    } = await getLatest(config);
+    if (!latest || !params.version) {
+      res.statusCode = 500;
+      res.statusMessage = "Failed to fetch latest releases";
+      res.end();
+      return;
+    }
+
+    const releases = await releaseCache.get(config);
+    if (!releases) {
+      res.statusCode = 500;
+      res.statusMessage = "Failed to fetch releases";
+      res.end();
+      return;
+    }
+
+    // Create a map of assets for this version
+    const versionAssets = new Map<PlatformIdentifier, PlatformAssets>();
+    for (const [platform, assets] of releases.entries()) {
+      const asset = assets.find(
+        (a: PlatformAssets) => a.version === params.version,
+      );
+      if (asset) {
+        versionAssets.set(platform, asset);
+      }
+    }
+
+    if (versionAssets.size === 0) {
+      res.statusCode = 404;
+      res.statusMessage = "Version not found";
+      res.end();
+      return;
+    }
+
+    const html = renderVersionPage(config, params.version, versionAssets);
 
     // Send response
     res.statusCode = 200;
