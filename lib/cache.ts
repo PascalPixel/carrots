@@ -1,156 +1,111 @@
 import semver from "semver";
-
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
 import { Configuration } from "./index.js";
 
-let cachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
-let backupCachedLatest: Map<PlatformIdentifier, PlatformAssets> | null = null;
-let lastUpdated: number = 0;
-const cacheDuration = 1000 * 60 * 5; /* 5 minutes */
-
-// Function to update the cache and prepare common response data
-export async function getLatest(config: Configuration) {
-  let latest: Map<PlatformIdentifier, PlatformAssets> | null = null;
-  let platforms: PlatformIdentifier[] = [];
-  let version: string | undefined = "";
-  let date: string | undefined = "";
-
-  try {
-    latest = await getLatestRelease(config);
-    if (latest) {
-      platforms = Array.from(latest.keys());
-      version = latest.get(platforms[0])?.version;
-      date = latest.get(platforms[0])?.date;
-    }
-  } catch (e) {
-    console.error(e);
-    return { latest, platforms, version, date };
-  }
-
-  return { latest, platforms, version, date };
+// Types
+interface GitHubAsset {
+  url: string;
+  name: string;
+  size: number;
+  content_type: string;
+  browser_download_url: string;
 }
 
-const getLatestRelease = async (config: Configuration) => {
-  const now = Date.now();
+interface GitHubRelease {
+  name: string;
+  body: string;
+  draft: boolean;
+  tag_name: string;
+  prerelease: boolean;
+  published_at: string;
+  assets: GitHubAsset[];
+}
 
-  if (!cachedLatest || now - lastUpdated > cacheDuration) {
-    const fetchedLatest = await fetchLatestRelease(config);
-    if (fetchedLatest) {
-      cachedLatest = fetchedLatest;
-      backupCachedLatest = fetchedLatest;
-      lastUpdated = now;
-    } else if (backupCachedLatest) {
-      cachedLatest = backupCachedLatest;
+export interface PlatformAssets {
+  url: string;
+  date: string;
+  name: string;
+  size: number;
+  notes: string;
+  version: string;
+  api_url: string;
+  RELEASES?: string;
+  content_type: string;
+  isDraft: boolean;
+  isPrerelease: boolean;
+}
+
+// Cache management
+const CACHE_DURATION = 1000 * 60 * 5; /* 5 minutes */
+
+class ReleaseCache {
+  private cache: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
+  private backupCache: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
+  private lastUpdated: number = 0;
+
+  async get(
+    config: Configuration,
+  ): Promise<Map<PlatformIdentifier, PlatformAssets[]> | null> {
+    const now = Date.now();
+    if (!this.cache || now - this.lastUpdated > CACHE_DURATION) {
+      const fetchedReleases = await fetchAllReleases(config);
+      if (fetchedReleases) {
+        this.cache = fetchedReleases;
+        this.backupCache = fetchedReleases;
+        this.lastUpdated = now;
+      } else if (this.backupCache) {
+        this.cache = this.backupCache;
+      }
     }
+    return this.cache;
   }
+}
 
-  return cachedLatest;
-};
+export const releaseCache = new ReleaseCache();
 
-// Fetches the latest release information from GitHub
-async function fetchLatestRelease(
+// GitHub API helpers
+async function fetchGitHubReleases(
   config: Configuration,
-): Promise<Map<PlatformIdentifier, PlatformAssets> | null> {
-  const latest = new Map<PlatformIdentifier, PlatformAssets>();
-  const indexes = new Map<string, string>();
-
+): Promise<GitHubRelease[] | null> {
   const account = encodeURIComponent(config.account || "");
   const repository = encodeURIComponent(config.repository || "");
   const url = `https://api.github.com/repos/${account}/${repository}/releases?per_page=100`;
   const headers: HeadersInit = { Accept: "application/vnd.github.preview" };
   if (config.token) headers.Authorization = `token ${config.token}`;
-  const releasesResponse = await fetch(url, { headers });
 
-  if (releasesResponse.status === 403) {
+  const response = await fetch(url, { headers });
+  if (response.status === 403) {
     console.error("Rate Limited!");
     return null;
   }
+  if (response.status >= 400) return null;
 
-  if (releasesResponse.status >= 400) {
-    return null;
-  }
-
-  const releases: GitHubRelease[] = await releasesResponse.json();
-
-  for (const release of [...releases].reverse()) {
-    if (
-      !(!semver.valid(release.tag_name) || release.draft || release.prerelease)
-    ) {
-      for (const asset of release.assets) {
-        if (asset.name === "RELEASES") {
-          // Store in indexes
-          indexes.set(release.tag_name, asset.url);
-        } else {
-          // Store in latest
-          const platforms = fileNameToPlatforms(asset.name);
-          if (platforms) {
-            for (const platform of platforms) {
-              latest.set(platform, {
-                name: release.name,
-                notes: release.body,
-                version: release.tag_name,
-                date: release.published_at,
-                url: asset.browser_download_url,
-                api_url: asset.url,
-                content_type: asset.content_type,
-                size: Math.round((asset.size / 1000000) * 10) / 10,
-              });
-            }
-          } else {
-            // Might not have arch in the name, so we'll add it to test
-            let patchedName = asset.name;
-            const insertIndex = asset.name.lastIndexOf(".");
-            if (insertIndex >= 0) {
-              patchedName = `${asset.name.substring(0, insertIndex)}-x64${asset.name.substring(insertIndex)}`;
-            }
-            const platforms = fileNameToPlatforms(patchedName);
-            if (platforms) {
-              for (const platform of platforms) {
-                latest.set(platform, {
-                  name: release.name,
-                  notes: release.body,
-                  version: release.tag_name,
-                  date: release.published_at,
-                  url: asset.browser_download_url,
-                  api_url: asset.url,
-                  content_type: asset.content_type,
-                  size: Math.round((asset.size / 1000000) * 10) / 10,
-                });
-              }
-            } else {
-              console.debug(`Unknown platform for ${asset.name}`);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  for (const key of [
-    PlatformIdentifier.WIN32_X64,
-    PlatformIdentifier.WIN32_IA32,
-    PlatformIdentifier.WIN32_ARM64,
-  ]) {
-    const asset = latest.get(key);
-    if (asset && indexes.has(asset.version)) {
-      const indexURL = indexes.get(asset.version) || "";
-      const indexResponse = await fetch(indexURL, {
-        headers: {
-          Accept: "application/octet-stream",
-          ...(config.token ? { Authorization: `Bearer ${config.token}` } : {}),
-        },
-      });
-      const content = await indexResponse.text();
-      asset.RELEASES = content;
-    }
-  }
-
-  return latest;
+  return response.json();
 }
 
+async function fetchReleaseContent(
+  url: string,
+  token: string | undefined,
+): Promise<string | null> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/octet-stream",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    return await response.text();
+  } catch (e) {
+    console.error(`Failed to fetch RELEASES content:`, e);
+    return null;
+  }
+}
+
+// Platform matching
 function fileNameToPlatforms(fileName: string): PlatformIdentifier[] {
   const sanitizedFileName = fileName.toLowerCase().replace(/_/g, "-");
   const matchedPlatforms: PlatformIdentifier[] = [];
+
   for (const platform of Object.keys(PLATFORMS) as PlatformIdentifier[]) {
     const platformInfo = PLATFORMS[platform];
     for (const filePattern of platformInfo.filePatterns) {
@@ -162,35 +117,172 @@ function fileNameToPlatforms(fileName: string): PlatformIdentifier[] {
   return matchedPlatforms;
 }
 
-// Structure for GitHub assets in a release
-interface GitHubAsset {
-  url: string;
-  name: string;
-  size: number;
-  content_type: string;
-  browser_download_url: string;
+function tryMatchPlatform(assetName: string): PlatformIdentifier[] {
+  // Try direct match first
+  let platforms = fileNameToPlatforms(assetName);
+
+  // If no match, try with x64 suffix
+  if (!platforms.length) {
+    const insertIndex = assetName.lastIndexOf(".");
+    if (insertIndex >= 0) {
+      const patchedName = `${assetName.substring(0, insertIndex)}-x64${assetName.substring(insertIndex)}`;
+      platforms = fileNameToPlatforms(patchedName);
+    }
+  }
+
+  return platforms;
 }
 
-// Structure for GitHub release information
-interface GitHubRelease {
-  name: string;
-  body: string;
-  draft: boolean;
-  tag_name: string;
-  prerelease: boolean;
-  published_at: string;
-  assets: GitHubAsset[];
+// Asset processing
+function createAssetData(
+  release: GitHubRelease,
+  asset: GitHubAsset,
+): Omit<PlatformAssets, "RELEASES"> {
+  return {
+    name: release.name,
+    notes: release.body,
+    version: release.tag_name,
+    date: release.published_at,
+    url: asset.browser_download_url,
+    api_url: asset.url,
+    content_type: asset.content_type,
+    size: Math.round((asset.size / 1000000) * 10) / 10,
+    isDraft: release.draft,
+    isPrerelease: release.prerelease,
+  };
 }
 
-// Structure for platform-specific release assets
-export interface PlatformAssets {
-  url: string;
-  date: string;
-  name: string;
-  size: number;
-  notes: string;
-  version: string;
-  api_url: string;
-  RELEASES?: string;
-  content_type: string;
+// Main functions
+async function fetchAllReleases(
+  config: Configuration,
+): Promise<Map<PlatformIdentifier, PlatformAssets[]> | null> {
+  const releases = await fetchGitHubReleases(config);
+  if (!releases) return null;
+
+  const allReleases = new Map<PlatformIdentifier, PlatformAssets[]>();
+  const releasesContent = new Map<string, string>();
+  const releasesPromises: Promise<void>[] = [];
+
+  // Process releases in reverse chronological order
+  for (let i = releases.length - 1; i >= 0; i--) {
+    const release = releases[i];
+    if (!semver.valid(release.tag_name)) continue;
+
+    // Fetch RELEASES content in parallel
+    const releasesAsset = release.assets.find(
+      (asset) => asset.name === "RELEASES",
+    );
+    if (releasesAsset) {
+      releasesPromises.push(
+        (async () => {
+          const content = await fetchReleaseContent(
+            releasesAsset.url,
+            config.token,
+          );
+          if (content) releasesContent.set(release.tag_name, content);
+        })(),
+      );
+    }
+
+    // Process other assets
+    for (const asset of release.assets) {
+      if (asset.name === "RELEASES") continue;
+
+      const platforms = tryMatchPlatform(asset.name);
+      if (!platforms.length) {
+        console.warn(`Unknown platform for ${asset.name}`);
+        continue;
+      }
+
+      const assetData = createAssetData(release, asset);
+      for (const platform of platforms) {
+        if (!allReleases.has(platform)) {
+          allReleases.set(platform, []);
+        }
+        allReleases.get(platform)?.push({
+          ...assetData,
+          RELEASES: platform.startsWith("win32")
+            ? releasesContent.get(release.tag_name)
+            : undefined,
+        });
+      }
+    }
+  }
+
+  await Promise.all(releasesPromises);
+
+  // Update Windows assets with RELEASES content
+  for (const [platform, assets] of allReleases.entries()) {
+    if (platform.startsWith("win32")) {
+      for (const asset of assets) {
+        asset.RELEASES = releasesContent.get(asset.version);
+      }
+    }
+  }
+
+  return allReleases;
+}
+
+export async function getLatest(config: Configuration) {
+  let latest: Map<PlatformIdentifier, PlatformAssets> | null = null;
+  let platforms: PlatformIdentifier[] = [];
+  let version: string | undefined = "";
+  let date: string | undefined = "";
+
+  try {
+    const releases = await releaseCache.get(config);
+    if (releases) {
+      latest = new Map();
+      platforms = Array.from(releases.keys());
+
+      // Get latest version for each platform (excluding drafts and prereleases)
+      for (const platform of platforms) {
+        const platformReleases = releases.get(platform);
+        if (platformReleases?.length) {
+          const stableReleases = platformReleases.filter(
+            (release) => !release.isDraft && !release.isPrerelease,
+          );
+          if (stableReleases.length > 0) {
+            const latestRelease = stableReleases.reduce((latest, current) =>
+              semver.gt(current.version, latest.version) ? current : latest,
+            );
+            latest.set(platform, latestRelease);
+          }
+        }
+      }
+
+      // Find the first platform with a stable release to get version and date
+      for (const platform of platforms) {
+        const latestForPlatform = latest.get(platform);
+        if (latestForPlatform) {
+          version = latestForPlatform.version;
+          date = latestForPlatform.date;
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  return { latest, platforms, version, date };
+}
+
+export async function getVersion(
+  config: Configuration,
+  platform: PlatformIdentifier,
+  version: string,
+) {
+  const releases = await releaseCache.get(config);
+  if (!releases) return null;
+
+  const platformReleases = releases.get(platform);
+  if (!platformReleases) return null;
+
+  // Only return non-draft, non-prerelease versions for the API
+  const release = platformReleases.find(
+    (release) =>
+      release.version === version && !release.isDraft && !release.isPrerelease,
+  );
+  return release || null;
 }
