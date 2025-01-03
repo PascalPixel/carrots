@@ -55,7 +55,7 @@ describe("html", () => {
     const res = await fetch(`${address}`);
     expect(res.status).toEqual(200);
     const text = await res.text();
-    expect(text).toContain("<main>");
+    expect(text).toContain("<main ");
   });
 
   it("should throw 404 for favicon", async () => {
