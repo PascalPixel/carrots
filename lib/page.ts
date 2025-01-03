@@ -28,7 +28,7 @@ function SubHeader({ children }: { children?: ReactNode }) {
       style: {
         fontSize: "1rem",
         fontWeight: 500,
-        color: "hsla(0, 0%, 100%, 0.65)",
+        color: "hsla(0, 0%, 100%, 0.85)",
         letterSpacing: "-0.025em",
         lineHeight: 1.4,
       },
@@ -43,15 +43,15 @@ function Link({ href, children }: { href: string; children?: ReactNode }) {
     {
       href,
       style: {
-        color: "hsla(142, 76%, 36%, 1)",
+        color: "hsla(142, 76%, 55%, 1)",
         textDecoration: "none",
         fontSize: "0.875rem",
         transition: "all 0.2s ease",
         borderBottom: "1px solid transparent",
         paddingBottom: "1px",
         ":hover": {
-          color: "hsla(142, 70%, 45%, 1)",
-          borderBottomColor: "hsla(142, 70%, 45%, 1)",
+          color: "hsla(142, 70%, 65%, 1)",
+          borderBottomColor: "hsla(142, 70%, 65%, 1)",
         },
       },
     },
@@ -78,16 +78,16 @@ function Badge({
 
   const variantStyles = {
     draft: {
-      background: "hsla(0, 0%, 0%, 0.3)",
-      color: "hsla(0, 0%, 100%, 0.65)",
+      background: "hsla(0, 0%, 20%, 0.5)",
+      color: "hsla(0, 0%, 100%, 0.85)",
     },
     prerelease: {
-      background: "hsla(0, 0%, 0%, 0.4)",
-      color: "hsla(0, 0%, 100%, 0.8)",
+      background: "hsla(0, 0%, 25%, 0.6)",
+      color: "hsla(0, 0%, 100%, 0.9)",
     },
     latest: {
-      background: "hsla(142, 76%, 36%, 0.2)",
-      color: "hsla(142, 70%, 45%, 1)",
+      background: "hsla(142, 76%, 36%, 0.3)",
+      color: "hsla(142, 70%, 65%, 1)",
     },
   };
 
@@ -120,7 +120,7 @@ function PlatformCount({ count }: { count: number }) {
         display: "inline-block",
         fontSize: "0.875rem",
         fontWeight: 500,
-        color: "hsla(0, 0%, 100%, 0.65)",
+        color: "hsla(0, 0%, 100%, 0.85)",
       },
     },
     [`${count} platforms`],
@@ -137,8 +137,8 @@ function Card({
   children?: ReactNode;
 }) {
   const baseStyle = {
-    background: "hsla(0, 0%, 100%, 0.05)",
-    border: "1px solid hsla(0, 0%, 100%, 0.15)",
+    background: "hsla(0, 0%, 100%, 0.08)",
+    border: "1px solid hsla(0, 0%, 100%, 0.2)",
     borderRadius: "0.5rem",
     transition: "all 0.2s ease",
     color: "hsla(0, 0%, 100%, 1)",
@@ -463,11 +463,29 @@ function PlatformName({
   extension: string;
 }) {
   return o("span", null, [
-    o("span", { key: "name" }, name),
+    o(
+      "span",
+      {
+        key: "name",
+        style: {
+          color: "hsla(0, 0%, 100%, 1)",
+          fontWeight: 500,
+        },
+      },
+      name,
+    ),
     " ",
-    o("span", { key: "extension", style: { opacity: "50%" } }, [
-      `(${extension})`,
-    ]),
+    o(
+      "span",
+      {
+        key: "extension",
+        style: {
+          color: "hsla(0, 0%, 100%, 0.5)",
+          fontWeight: 400,
+        },
+      },
+      [`(${extension})`],
+    ),
   ]);
 }
 
@@ -617,7 +635,7 @@ function Layout({ children }: { children?: ReactNode }) {
         style: {
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           margin: 0,
-          background: "hsla(0, 0%, 0%, 1)",
+          background: "hsla(0, 0%, 5%, 1)",
           color: "hsla(0, 0%, 100%, 1)",
           fontSize: "0.875rem",
           lineHeight: 1.5,
@@ -857,8 +875,8 @@ function VersionPage({
         "div",
         {
           style: {
-            background: "#111",
-            border: "1px solid #333",
+            background: "hsla(0, 0%, 10%, 1)",
+            border: "1px solid hsla(0, 0%, 30%, 1)",
             borderRadius: "0.5rem",
             padding: "1.5rem",
             marginTop: "2rem",
@@ -866,7 +884,7 @@ function VersionPage({
             wordBreak: "break-word",
             fontSize: "0.875rem",
             lineHeight: 1.5,
-            color: "#d4d4d8",
+            color: "hsla(0, 0%, 95%, 1)",
           },
         },
         [releaseNotes],
