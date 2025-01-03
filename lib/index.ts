@@ -3,11 +3,7 @@ import semver from "semver";
 import Router from "find-my-way";
 
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
-import {
-  renderHomePage,
-  renderVersionPage,
-  renderVersionsPage,
-} from "./page.js";
+import { makeVersionListPage, makeVersionPage } from "./page.js";
 import { getLatest, releaseCache, PlatformAssets } from "./cache.js";
 
 // Main function to handle routing and responses
@@ -32,26 +28,7 @@ export async function carrots(config: Configuration) {
       return;
     }
 
-    const html = renderHomePage(config, releases);
-
-    // Send response
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/html");
-    res.end(html);
-    return;
-  });
-
-  // All versions page without latest version table
-  router.get("/versions", async (req, res, params) => {
-    const releases = await releaseCache.get(config);
-    if (!releases) {
-      res.statusCode = 500;
-      res.statusMessage = "Failed to fetch releases";
-      res.end();
-      return;
-    }
-
-    const html = renderVersionsPage(config, releases);
+    const html = makeVersionListPage(config, releases);
 
     // Send response
     res.statusCode = 200;
@@ -101,7 +78,7 @@ export async function carrots(config: Configuration) {
       return;
     }
 
-    const html = renderVersionPage(config, params.version, versionAssets);
+    const html = makeVersionPage(config, params.version, versionAssets);
 
     // Send response
     res.statusCode = 200;
