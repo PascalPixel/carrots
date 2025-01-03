@@ -42,7 +42,7 @@ export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
                 ${asset.asset.version}
               </a>
             `
-          : `<span style="opacity: 50%">N/A</span>`;
+          : `<span style=\"opacity: 50%\">N/A</span>`;
       });
 
       return `
@@ -52,22 +52,22 @@ export function makePage(latest: Map<PlatformIdentifier, PlatformAssets>) {
               filetypeOs === "linux-deb"
                 ? 'Debian <span style="opacity: 50%;">(.deb)</span>'
                 : filetypeOs === "linux-rpm"
-                  ? 'Fedora <span style="opacity: 50%;">(.rpm)</span>'
-                  : filetypeOs === "linux-appimage"
-                    ? 'Linux <span style="opacity: 50%;">(.AppImage)</span>'
-                    : filetypeOs === "linux-AppImage"
-                      ? 'Linux <span style="opacity: 50%;">(.AppImage)</span>'
-                      : filetypeOs === "linux-snap"
-                        ? 'Linux <span style="opacity: 50%;">(.snap)</span>'
-                        : filetypeOs === "darwin-dmg"
-                          ? 'macOS <span style="opacity: 50%;">(.dmg)</span>'
-                          : filetypeOs === "darwin-zip"
-                            ? 'macOS <span style="opacity: 50%;">(.zip)</span>'
-                            : filetypeOs === "win32-exe"
-                              ? 'Windows <span style="opacity: 50%;">(.exe)</span>'
-                              : filetypeOs === "win32-nupkg"
-                                ? 'Squirrel <span style="opacity: 50%;">(.nupkg)</span>'
-                                : filetypeOs
+                ? 'Fedora <span style="opacity: 50%;">(.rpm)</span>'
+                : filetypeOs === "linux-appimage"
+                ? 'Linux <span style="opacity: 50%;">(.AppImage)</span>'
+                : filetypeOs === "linux-AppImage"
+                ? 'Linux <span style="opacity: 50%;">(.AppImage)</span>'
+                : filetypeOs === "linux-snap"
+                ? 'Linux <span style="opacity: 50%;">(.snap)</span>'
+                : filetypeOs === "darwin-dmg"
+                ? 'macOS <span style="opacity: 50%;">(.dmg)</span>'
+                : filetypeOs === "darwin-zip"
+                ? 'macOS <span style="opacity: 50%;">(.zip)</span>'
+                : filetypeOs === "win32-exe"
+                ? 'Windows <span style="opacity: 50%;">(.exe)</span>'
+                : filetypeOs === "win32-nupkg"
+                ? 'Squirrel <span style="opacity: 50%;">(.nupkg)</span>'
+                : filetypeOs
             }
            </td>
          <td>${cells.join("</td><td>")}</td>
