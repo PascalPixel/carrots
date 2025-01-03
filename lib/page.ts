@@ -28,7 +28,7 @@ function SubHeader({ children }: { children?: ReactNode }) {
       style: {
         fontSize: "1rem",
         fontWeight: 500,
-        color: "#a1a1aa",
+        color: "hsla(0, 0%, 100%, 0.65)",
         letterSpacing: "-0.025em",
         lineHeight: 1.4,
       },
@@ -43,15 +43,15 @@ function Link({ href, children }: { href: string; children?: ReactNode }) {
     {
       href,
       style: {
-        color: "#16a34a", // Changed to grass green
+        color: "hsla(142, 76%, 36%, 1)",
         textDecoration: "none",
         fontSize: "0.875rem",
         transition: "all 0.2s ease",
         borderBottom: "1px solid transparent",
         paddingBottom: "1px",
         ":hover": {
-          color: "#22c55e", // Lighter grass green on hover
-          borderBottomColor: "#22c55e",
+          color: "hsla(142, 70%, 45%, 1)",
+          borderBottomColor: "hsla(142, 70%, 45%, 1)",
         },
       },
     },
@@ -78,16 +78,16 @@ function Badge({
 
   const variantStyles = {
     draft: {
-      background: "#27272a",
-      color: "#a1a1aa",
+      background: "hsla(0, 0%, 0%, 0.3)",
+      color: "hsla(0, 0%, 100%, 0.65)",
     },
     prerelease: {
-      background: "#0c4a6e",
-      color: "#7dd3fc",
+      background: "hsla(0, 0%, 0%, 0.4)",
+      color: "hsla(0, 0%, 100%, 0.8)",
     },
     latest: {
-      background: "#064e3b",
-      color: "#34d399",
+      background: "hsla(142, 76%, 36%, 0.2)",
+      color: "hsla(142, 70%, 45%, 1)",
     },
   };
 
@@ -120,7 +120,7 @@ function PlatformCount({ count }: { count: number }) {
         display: "inline-block",
         fontSize: "0.875rem",
         fontWeight: 500,
-        color: "#a1a1aa",
+        color: "hsla(0, 0%, 100%, 0.65)",
       },
     },
     [`${count} platforms`],
@@ -137,11 +137,11 @@ function Card({
   children?: ReactNode;
 }) {
   const baseStyle = {
-    background: "#111",
-    border: "1px solid #333",
+    background: "hsla(0, 0%, 100%, 0.05)",
+    border: "1px solid hsla(0, 0%, 100%, 0.15)",
     borderRadius: "0.5rem",
     transition: "all 0.2s ease",
-    color: "#fff",
+    color: "hsla(0, 0%, 100%, 1)",
     textDecoration: "none",
   };
 
@@ -172,10 +172,10 @@ function TableHeader({
         verticalAlign: "top",
         position: "relative",
         wordBreak: "break-word",
-        borderBottom: "1px solid #27272a",
-        borderRight: "1px solid #27272a",
+        borderBottom: "1px solid hsla(0, 0%, 100%, 0.1)",
+        borderRight: "1px solid hsla(0, 0%, 100%, 0.1)",
         fontSize: "0.75rem",
-        color: "#fff",
+        color: "hsla(0, 0%, 100%, 1)",
         textTransform: "uppercase",
         letterSpacing: "0.05em",
         ...style,
@@ -203,11 +203,11 @@ function TableCell({
         verticalAlign: "top",
         position: "relative",
         wordBreak: "break-word",
-        borderBottom: "1px solid #27272a",
-        borderRight: "1px solid #27272a",
+        borderBottom: "1px solid hsla(0, 0%, 100%, 0.1)",
+        borderRight: "1px solid hsla(0, 0%, 100%, 0.1)",
         fontSize: "0.875rem",
         lineHeight: 1.5,
-        color: primary ? "#fff" : "#a1a1aa",
+        color: primary ? "hsla(0, 0%, 100%, 1)" : "hsla(0, 0%, 100%, 0.65)",
         ...style,
       },
     },
@@ -617,8 +617,8 @@ function Layout({ children }: { children?: ReactNode }) {
         style: {
           fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           margin: 0,
-          background: "#000",
-          color: "#fff",
+          background: "hsla(0, 0%, 0%, 1)",
+          color: "hsla(0, 0%, 100%, 1)",
           fontSize: "0.875rem",
           lineHeight: 1.5,
           WebkitFontSmoothing: "antialiased",
