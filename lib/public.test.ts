@@ -1,6 +1,7 @@
 import http from "http";
 import dotenv from "dotenv";
 import { listen } from "async-listen";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 import { carrots } from "./index.js";
 
@@ -52,7 +53,7 @@ describe("html", () => {
     const res = await fetch(`${address}`);
     expect(res.status).toEqual(200);
     const text = await res.text();
-    expect(text).toContain("<main>");
+    expect(text).toContain("<main ");
   });
 
   it("should throw 404 for favicon", async () => {
