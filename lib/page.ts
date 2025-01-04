@@ -123,7 +123,7 @@ function PlatformCount({ count }: { count: number }) {
         color: "hsla(0, 0%, 100%, 0.85)",
       },
     },
-    [`${count} platforms`],
+    [o("span", { key: "count" }, `${count} platforms`)],
   );
 }
 
@@ -228,7 +228,6 @@ function VersionListTable({
     },
   ][];
 }) {
-  // Find the latest stable version
   const latestVersion = versions.find(
     ([_, details]) => !details.isDraft && !details.isPrerelease,
   )?.[0];
@@ -237,6 +236,7 @@ function VersionListTable({
     o(
       "table",
       {
+        key: "table",
         style: {
           width: "100%",
           borderCollapse: "separate",
@@ -257,7 +257,7 @@ function VersionListTable({
                 width: "25%",
               },
             },
-            ["Version"],
+            [o("span", { key: "text" }, "Version")],
           ),
           o(
             TableHeader,
@@ -268,7 +268,7 @@ function VersionListTable({
                 width: "20%",
               },
             },
-            ["Status"],
+            [o("span", { key: "text" }, "Status")],
           ),
           o(
             TableHeader,
@@ -279,7 +279,7 @@ function VersionListTable({
                 width: "15%",
               },
             },
-            ["Platforms"],
+            [o("span", { key: "text" }, "Platforms")],
           ),
           o(
             TableHeader,
@@ -291,7 +291,7 @@ function VersionListTable({
                 width: "40%",
               },
             },
-            ["Release Date"],
+            [o("span", { key: "text" }, "Release Date")],
           ),
         ]),
         ...versions.map(([version, details], rowIndex, array) =>
@@ -313,9 +313,10 @@ function VersionListTable({
                 o(
                   Link,
                   {
+                    key: "link",
                     href: `/versions/${version}`,
                   },
-                  [version],
+                  [o("span", { key: "text" }, version)],
                 ),
               ],
             ),
@@ -334,6 +335,7 @@ function VersionListTable({
                 o(
                   "div",
                   {
+                    key: "badges",
                     style: {
                       display: "flex",
                       gap: "0.5rem",
@@ -348,7 +350,7 @@ function VersionListTable({
                             key: "latest",
                             variant: "latest",
                           },
-                          ["Latest"],
+                          [o("span", { key: "text" }, "Latest")],
                         )
                       : null,
                     details.isDraft
@@ -358,7 +360,7 @@ function VersionListTable({
                             key: "draft",
                             variant: "draft",
                           },
-                          ["Draft"],
+                          [o("span", { key: "text" }, "Draft")],
                         )
                       : null,
                     details.isPrerelease
@@ -368,7 +370,7 @@ function VersionListTable({
                             key: "prerelease",
                             variant: "prerelease",
                           },
-                          ["Pre-release"],
+                          [o("span", { key: "text" }, "Pre-release")],
                         )
                       : null,
                   ].filter(Boolean),
@@ -388,6 +390,7 @@ function VersionListTable({
               },
               [
                 o(PlatformCount, {
+                  key: "count",
                   count: details.platforms.size,
                 }),
               ],
@@ -404,7 +407,7 @@ function VersionListTable({
                       : "1px solid #27272a",
                 },
               },
-              [formatDate(details.date)],
+              [o("span", { key: "text" }, formatDate(details.date))],
             ),
           ]),
         ),
@@ -526,6 +529,7 @@ function DownloadTable({
     o(
       "table",
       {
+        key: "table",
         style: {
           width: "100%",
           borderCollapse: "separate",
@@ -546,7 +550,7 @@ function DownloadTable({
                 borderRight: "1px solid #333",
               },
             },
-            [""],
+            [o("span", { key: "empty" }, "")],
           ),
           ...Array.from(architectures).map((arch, index, array) =>
             o(
@@ -559,7 +563,7 @@ function DownloadTable({
                     index === array.length - 1 ? "none" : "1px solid #333",
                 },
               },
-              [arch],
+              [o("span", { key: "arch" }, arch)],
             ),
           ),
         ]),
@@ -601,7 +605,7 @@ function DownloadTable({
                           id: asset.id,
                         })
                       : o("span", { key: "na", style: { opacity: "50%" } }, [
-                          "N/A",
+                          o("span", { key: "text" }, "N/A"),
                         ]),
                   ],
                 );
@@ -657,7 +661,7 @@ function Layout({ children }: { children?: ReactNode }) {
               gap: "1rem",
             },
           },
-          children,
+          children ? [o("div", { key: "children" }, children)] : [],
         ),
       ],
     ),
@@ -751,9 +755,9 @@ function HomePage({
 
   return o(Layout, null, [
     o("div", { key: "header" }, [
-      o(Header, null, [`${config.account}/${config.repository}`]),
-      o(SubHeader, null, [
-        "Latest Version ",
+      o(Header, { key: "title" }, [`${config.account}/${config.repository}`]),
+      o(SubHeader, { key: "subtitle" }, [
+        o("span", { key: "label" }, "Latest Version "),
         o("span", { key: "version", style: { opacity: "50%" } }, [
           `(${latestVersion})`,
         ]),
@@ -769,7 +773,7 @@ function HomePage({
           textAlign: "center",
         },
       },
-      [o(Link, { href: "/versions" }, ["View all versions →"])],
+      [o(Link, { key: "link", href: "/versions" }, ["View all versions →"])],
     ),
   ]);
 }
@@ -818,10 +822,14 @@ function VersionsPage({
   return o(Layout, null, [
     o("div", { key: "header" }, [
       o("p", { key: "back" }, [
-        o(Link, { href: "/" }, ["← Back to latest version"]),
+        o(Link, { key: "link", href: "/" }, ["← Back to latest version"]),
       ]),
-      o(Header, { key: "title" }, [`${config.account}/${config.repository}`]),
-      o(SubHeader, { key: "subtitle" }, ["All Versions"]),
+      o(Header, { key: "title" }, [
+        o("span", { key: "repo" }, `${config.account}/${config.repository}`),
+      ]),
+      o(SubHeader, { key: "subtitle" }, [
+        o("span", { key: "label" }, "All Versions"),
+      ]),
     ]),
     o(VersionListTable, { key: "versions", versions: sortedVersions }),
   ]);
@@ -864,16 +872,21 @@ function VersionPage({
   });
 
   return o(Layout, null, [
-    o("div", null, [
-      o("p", null, [o(Link, { href: "/versions" }, "← Back to all versions")]),
-      o(Header, null, [`${config.account}/${config.repository}`]),
-      o(SubHeader, null, [`Version ${version}`]),
+    o("div", { key: "header" }, [
+      o("p", { key: "back" }, [
+        o(Link, { key: "link", href: "/versions" }, "← Back to all versions"),
+      ]),
+      o(Header, { key: "title" }, [`${config.account}/${config.repository}`]),
+      o(SubHeader, { key: "subtitle" }, [
+        o("span", { key: "version" }, `Version ${version}`),
+      ]),
     ]),
-    o(DownloadTable, { groupedData, architectures }),
+    o(DownloadTable, { key: "table", groupedData, architectures }),
     releaseNotes &&
       o(
         "div",
         {
+          key: "notes",
           style: {
             background: "hsla(0, 0%, 10%, 1)",
             border: "1px solid hsla(0, 0%, 30%, 1)",
@@ -885,9 +898,10 @@ function VersionPage({
             fontSize: "0.875rem",
             lineHeight: 1.5,
             color: "hsla(0, 0%, 95%, 1)",
+            overflow: "auto",
           },
         },
-        [releaseNotes],
+        releaseNotes,
       ),
   ]);
 }
