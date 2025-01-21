@@ -58,6 +58,15 @@ TypeScript-based Electron downloads and updates server that uses GitHub to serve
 | Mac     | .zip      | Download | Yes       |
 | Mac     | .zip      | Update   | Yes       |
 
+## Configuration
+
+| Option       | Type    | Default | Description                                             |
+| ------------ | ------- | ------- | ------------------------------------------------------- |
+| account      | string  | -       | GitHub account name                                     |
+| repository   | string  | -       | GitHub repository name                                  |
+| token        | string  | -       | GitHub token for private repositories (optional)        |
+| hideVersions | boolean | false   | Hide version history and disable version-specific pages |
+
 ## Thanks
 
 Shamelessly based on and made possible thanks to;

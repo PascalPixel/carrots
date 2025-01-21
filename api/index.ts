@@ -7,6 +7,7 @@ const listener = await carrots({
   account: process.env.ACCOUNT,
   repository: process.env.REPOSITORY,
   token: process.env.TOKEN,
+  hideVersions: !!process.env.HIDE_VERSIONS,
 });
 
 export default listener;

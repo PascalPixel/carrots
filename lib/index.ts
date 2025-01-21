@@ -42,73 +42,87 @@ export async function carrots(config: Configuration) {
   });
 
   // All versions page without latest version table
-  router.get("/versions", async (req, res, params) => {
-    const releases = await releaseCache.get(config);
-    if (!releases) {
-      res.statusCode = 500;
-      res.statusMessage = "Failed to fetch releases";
-      res.end();
-      return;
-    }
-
-    const html = renderVersionsPage(config, releases);
-
-    // Send response
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/html");
-    res.end(html);
-    return;
-  });
-
-  // Version-specific page
-  router.get("/versions/:version", async (req, res, params) => {
-    const {
-      latest,
-      platforms,
-      version: latestVersion,
-      date,
-    } = await getLatest(config);
-    if (!latest || !params.version) {
-      res.statusCode = 500;
-      res.statusMessage = "Failed to fetch latest releases";
-      res.end();
-      return;
-    }
-
-    const releases = await releaseCache.get(config);
-    if (!releases) {
-      res.statusCode = 500;
-      res.statusMessage = "Failed to fetch releases";
-      res.end();
-      return;
-    }
-
-    // Create a map of assets for this version
-    const versionAssets = new Map<PlatformIdentifier, PlatformAssets>();
-    for (const [platform, assets] of releases.entries()) {
-      const asset = assets.find(
-        (a: PlatformAssets) => a.version === params.version,
-      );
-      if (asset) {
-        versionAssets.set(platform, asset);
+  if (!config.hideVersions) {
+    router.get("/versions", async (req, res, params) => {
+      const releases = await releaseCache.get(config);
+      if (!releases) {
+        res.statusCode = 500;
+        res.statusMessage = "Failed to fetch releases";
+        res.end();
+        return;
       }
-    }
 
-    if (versionAssets.size === 0) {
-      res.statusCode = 404;
-      res.statusMessage = "Version not found";
-      res.end();
+      const html = renderVersionsPage(config, releases);
+
+      // Send response
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/html");
+      res.end(html);
       return;
-    }
+    });
 
-    const html = renderVersionPage(config, params.version, versionAssets);
+    // Version-specific page
+    router.get("/versions/:version", async (req, res, params) => {
+      const {
+        latest,
+        platforms,
+        version: latestVersion,
+        date,
+      } = await getLatest(config);
+      if (!latest || !params.version) {
+        res.statusCode = 500;
+        res.statusMessage = "Failed to fetch latest releases";
+        res.end();
+        return;
+      }
 
-    // Send response
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/html");
-    res.end(html);
-    return;
-  });
+      const releases = await releaseCache.get(config);
+      if (!releases) {
+        res.statusCode = 500;
+        res.statusMessage = "Failed to fetch releases";
+        res.end();
+        return;
+      }
+
+      // Create a map of assets for this version
+      const versionAssets = new Map<PlatformIdentifier, PlatformAssets>();
+      for (const [platform, assets] of releases.entries()) {
+        const asset = assets.find(
+          (a: PlatformAssets) => a.version === params.version,
+        );
+        if (asset) {
+          versionAssets.set(platform, asset);
+        }
+      }
+
+      if (versionAssets.size === 0) {
+        res.statusCode = 404;
+        res.statusMessage = "Version not found";
+        res.end();
+        return;
+      }
+
+      const html = renderVersionPage(config, params.version, versionAssets);
+
+      // Send response
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "text/html");
+      res.end(html);
+      return;
+    });
+  } else {
+    // Return 404 for version-related routes when hideVersions is true
+    router.get("/versions", (req, res) => {
+      res.statusCode = 404;
+      res.statusMessage = "Not Found";
+      res.end();
+    });
+    router.get("/versions/:version", (req, res) => {
+      res.statusCode = 404;
+      res.statusMessage = "Not Found";
+      res.end();
+    });
+  }
 
   // Disallow Crawlers
   router.get("/robots.txt", (req, res) => {
@@ -341,6 +355,7 @@ export interface Configuration {
   account: string;
   repository: string;
   token?: string;
+  hideVersions?: boolean;
 }
 
 // Details of a file for download

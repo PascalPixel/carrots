@@ -764,17 +764,18 @@ function HomePage({
       ]),
     ]),
     o(DownloadTable, { key: "downloads", groupedData, architectures }),
-    o(
-      "div",
-      {
-        key: "footer",
-        style: {
-          marginTop: "2rem",
-          textAlign: "center",
+    !config.hideVersions &&
+      o(
+        "div",
+        {
+          key: "footer",
+          style: {
+            marginTop: "2rem",
+            textAlign: "center",
+          },
         },
-      },
-      [o(Link, { key: "link", href: "/versions" }, ["View all versions →"])],
-    ),
+        [o(Link, { key: "link", href: "/versions" }, ["View all versions →"])],
+      ),
   ]);
 }
 
