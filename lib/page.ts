@@ -1,107 +1,17 @@
-import semver from "semver";
-import { createElement as o, CSSProperties, ReactNode } from "react";
-import { renderToString } from "react-dom/server";
-
-import { Configuration } from "./index.js";
-import { PlatformAssets } from "./cache.js";
+import { Configuration, PlatformAssets } from "./index.js";
 import { PLATFORMS, PlatformIdentifier } from "./platforms.js";
 
-function Header({ children }: { children?: ReactNode }) {
-  return o(
-    "h1",
-    {
-      style: {
-        fontSize: "1.25rem",
-        fontWeight: 700,
-        letterSpacing: "-0.025em",
-        lineHeight: 1.4,
-      },
-    },
-    children,
+// Simple HTML escaping
+const esc = (s: string) =>
+  s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ] || c,
   );
-}
-
-function SubHeader({ children }: { children?: ReactNode }) {
-  return o(
-    "h2",
-    {
-      style: {
-        fontSize: "1rem",
-        fontWeight: 500,
-        color: "hsla(0, 0%, 100%, 0.85)",
-        letterSpacing: "-0.025em",
-        lineHeight: 1.4,
-      },
-    },
-    children,
-  );
-}
-
-function Link({ href, children }: { href: string; children?: ReactNode }) {
-  return o(
-    "a",
-    {
-      href,
-      style: {
-        color: "hsla(142, 76%, 55%, 1)",
-        textDecoration: "none",
-        fontSize: "0.875rem",
-        transition: "all 0.2s ease",
-        borderBottom: "1px solid transparent",
-        paddingBottom: "1px",
-        ":hover": {
-          color: "hsla(142, 70%, 65%, 1)",
-          borderBottomColor: "hsla(142, 70%, 65%, 1)",
-        },
-      },
-    },
-    children,
-  );
-}
-
-function Badge({
-  variant,
-  children,
-}: {
-  variant: "draft" | "prerelease" | "latest";
-  children?: ReactNode;
-}) {
-  const baseStyle = {
-    display: "inline-block",
-    padding: "0.1rem 0.625rem",
-    borderRadius: "9999px",
-    fontSize: "0.75rem",
-    fontWeight: 500,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-  };
-
-  const variantStyles = {
-    draft: {
-      background: "hsla(0, 0%, 20%, 0.5)",
-      color: "hsla(0, 0%, 100%, 0.85)",
-    },
-    prerelease: {
-      background: "hsla(0, 0%, 25%, 0.6)",
-      color: "hsla(0, 0%, 100%, 0.9)",
-    },
-    latest: {
-      background: "hsla(142, 76%, 36%, 0.3)",
-      color: "hsla(142, 70%, 65%, 1)",
-    },
-  };
-
-  return o(
-    "span",
-    {
-      style: { ...baseStyle, ...variantStyles[variant] },
-    },
-    children,
-  );
-}
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "short",
@@ -109,115 +19,105 @@ function formatDate(dateString: string): string {
     hour: "2-digit",
     minute: "2-digit",
     timeZoneName: "short",
-  }).format(date);
+  }).format(new Date(dateString));
 }
 
-function PlatformCount({ count }: { count: number }) {
-  return o(
-    "span",
-    {
-      style: {
-        display: "inline-block",
-        fontSize: "0.875rem",
-        fontWeight: 500,
-        color: "hsla(0, 0%, 100%, 0.85)",
-      },
-    },
-    [o("span", { key: "count" }, `${count} platforms`)],
-  );
+const PLATFORM_NAMES: Record<string, [string, string]> = {
+  "linux-deb": ["Debian", ".deb"],
+  "linux-rpm": ["Fedora", ".rpm"],
+  "linux-AppImage": ["Linux", ".AppImage"],
+  "linux-snap": ["Linux", ".snap"],
+  "darwin-dmg": ["macOS", ".dmg"],
+  "darwin-zip": ["macOS", ".zip"],
+  "win32-exe": ["Windows", ".exe"],
+  "win32-nupkg": ["Squirrel", ".nupkg"],
+};
+
+function layout(content: string) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; margin: 0; background: #0d0d0d; color: #fff; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    main { padding: 2rem 1.5rem; margin: 0 auto; max-width: 768px; }
+    h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.25rem; }
+    h2 { font-size: 1rem; font-weight: 500; color: rgba(255,255,255,0.85); margin: 0 0 1rem; }
+    a { color: #4ade80; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .card { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; color: rgba(255,255,255,0.7); }
+    td { color: rgba(255,255,255,0.65); }
+    tr:last-child td { border-bottom: none; }
+    .primary { color: #fff; }
+    .badge { display: inline-block; padding: 0.1rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-latest { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .badge-draft { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .badge-prerelease { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
+    .muted { color: rgba(255,255,255,0.5); }
+    .center { text-align: center; margin-top: 2rem; }
+    .notes { background: #1a1a1a; border: 1px solid #333; border-radius: 0.5rem; padding: 1.5rem; margin-top: 2rem; white-space: pre-wrap; word-break: break-word; }
+    svg { vertical-align: middle; margin-right: 0.5rem; }
+  </style>
+</head>
+<body><main>${content}</main></body>
+</html>`;
 }
 
-function Card({
-  href,
-  children,
-  variant = "default",
-}: {
-  href?: string;
-  variant?: "default" | "draft" | "prerelease";
-  children?: ReactNode;
-}) {
-  const baseStyle = {
-    background: "hsla(0, 0%, 100%, 0.08)",
-    border: "1px solid hsla(0, 0%, 100%, 0.2)",
-    borderRadius: "0.5rem",
-    transition: "all 0.2s ease",
-    color: "hsla(0, 0%, 100%, 1)",
-    textDecoration: "none",
-  };
-
-  const variantStyle = variant === "draft" ? { opacity: 0.7 } : {};
-
-  const props = {
-    ...(href ? { href } : {}),
-    style: { ...baseStyle, ...variantStyle },
-  };
-
-  return o(href ? "a" : "div", props, children);
+function downloadIcon() {
+  return `<svg width="16" height="12" fill="currentColor"><path d="M0 5h1v7H0V5zm15 0h1v7h-1V5zM7.52941176 0h1v7h-1V0zM4.66999817 4.66673379L5.33673196 4l3.33326621 3.33326621L8.00326438 8 4.66999817 4.66673379zM10.6732625 4l.6667338.66673379L8.00673013 8l-.66673379-.66673379L10.6732625 4zM0 12v-1h16v1H0z"/></svg>`;
 }
 
-function TableHeader({
-  children,
-  style,
-}: {
-  style?: CSSProperties;
-  children?: ReactNode;
-}) {
-  return o(
-    "th",
-    {
-      style: {
-        fontWeight: 500,
-        padding: "0.75rem 1rem",
-        textAlign: "left",
-        verticalAlign: "top",
-        position: "relative",
-        wordBreak: "break-word",
-        borderBottom: "1px solid hsla(0, 0%, 100%, 0.1)",
-        borderRight: "1px solid hsla(0, 0%, 100%, 0.1)",
-        fontSize: "0.75rem",
-        color: "hsla(0, 0%, 100%, 1)",
-        textTransform: "uppercase",
-        letterSpacing: "0.05em",
-        ...style,
-      },
-    },
-    children,
-  );
+function downloadTable(latestAssets: Map<PlatformIdentifier, PlatformAssets>) {
+  // Group by OS+ext
+  const grouped = new Map<
+    string,
+    { id: PlatformIdentifier; arch: string; asset: PlatformAssets }[]
+  >();
+  const archs = new Set<string>();
+
+  for (const [id, asset] of latestAssets) {
+    const p = PLATFORMS[id];
+    const key = `${p.os}-${p.ext}`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push({ id, arch: p.arch, asset });
+    archs.add(p.arch);
+  }
+
+  const archList = Array.from(archs);
+
+  const headerCells = archList.map((a) => `<th>${esc(a)}</th>`).join("");
+
+  const rows = Array.from(grouped)
+    .map(([key, assets]) => {
+      const [name, ext] = PLATFORM_NAMES[key] || [key, ""];
+      const label = ext
+        ? `<span class="primary">${esc(name)}</span> <span class="muted">(${esc(ext)})</span>`
+        : esc(name);
+
+      const cells = archList
+        .map((arch) => {
+          const found = assets.find((a) => a.arch === arch);
+          if (found) {
+            return `<td><a href="/download/${found.id}">${downloadIcon()}${esc(found.asset.version)}</a></td>`;
+          }
+          return `<td class="muted">N/A</td>`;
+        })
+        .join("");
+
+      return `<tr><td>${label}</td>${cells}</tr>`;
+    })
+    .join("");
+
+  return `<div class="card"><table><tr><th></th>${headerCells}</tr>${rows}</table></div>`;
 }
 
-function TableCell({
-  primary,
-  style,
-  children,
-}: {
-  primary?: boolean;
-  style?: CSSProperties;
-  children?: ReactNode;
-}) {
-  return o(
-    "td",
-    {
-      style: {
-        padding: "0.75rem 1rem",
-        textAlign: "left",
-        verticalAlign: "top",
-        position: "relative",
-        wordBreak: "break-word",
-        borderBottom: "1px solid hsla(0, 0%, 100%, 0.1)",
-        borderRight: "1px solid hsla(0, 0%, 100%, 0.1)",
-        fontSize: "0.875rem",
-        lineHeight: 1.5,
-        color: primary ? "hsla(0, 0%, 100%, 1)" : "hsla(0, 0%, 100%, 0.65)",
-        ...style,
-      },
-    },
-    children ? children : [],
-  );
-}
-
-function VersionListTable({
-  versions,
-}: {
+function versionTable(
   versions: [
     string,
     {
@@ -226,699 +126,129 @@ function VersionListTable({
       isDraft: boolean;
       isPrerelease: boolean;
     },
-  ][];
-}) {
-  const latestVersion = versions.find(
-    ([_, details]) => !details.isDraft && !details.isPrerelease,
-  )?.[0];
+  ][],
+  latestVersion: string,
+) {
+  const rows = versions
+    .map(([version, details]) => {
+      const badges: string[] = [];
+      if (version === latestVersion)
+        badges.push(`<span class="badge badge-latest">Latest</span>`);
+      if (details.isDraft)
+        badges.push(`<span class="badge badge-draft">Draft</span>`);
+      if (details.isPrerelease)
+        badges.push(`<span class="badge badge-prerelease">Pre-release</span>`);
 
-  return o(Card, null, [
-    o(
-      "table",
-      {
-        key: "table",
-        style: {
-          width: "100%",
-          borderCollapse: "separate",
-          borderSpacing: 0,
-          marginBottom: 0,
-          tableLayout: "fixed",
-        },
-      },
-      [
-        o("tr", { key: "header" }, [
-          o(
-            TableHeader,
-            {
-              key: "version",
-              style: {
-                borderTop: "none",
-                borderLeft: "none",
-                width: "25%",
-              },
-            },
-            [o("span", { key: "text" }, "Version")],
-          ),
-          o(
-            TableHeader,
-            {
-              key: "status",
-              style: {
-                borderTop: "none",
-                width: "20%",
-              },
-            },
-            [o("span", { key: "text" }, "Status")],
-          ),
-          o(
-            TableHeader,
-            {
-              key: "platforms",
-              style: {
-                borderTop: "none",
-                width: "15%",
-              },
-            },
-            [o("span", { key: "text" }, "Platforms")],
-          ),
-          o(
-            TableHeader,
-            {
-              key: "date",
-              style: {
-                borderTop: "none",
-                borderRight: "none",
-                width: "40%",
-              },
-            },
-            [o("span", { key: "text" }, "Date")],
-          ),
-        ]),
-        ...versions.map(([version, details], rowIndex, array) =>
-          o("tr", { key: version }, [
-            o(
-              TableCell,
-              {
-                key: "version",
-                primary: true,
-                style: {
-                  borderLeft: "none",
-                  borderBottom:
-                    rowIndex === array.length - 1
-                      ? "none"
-                      : "1px solid #27272a",
-                },
-              },
-              [
-                o(
-                  Link,
-                  {
-                    key: "link",
-                    href: `/versions/${version}`,
-                  },
-                  [o("span", { key: "text" }, version)],
-                ),
-              ],
-            ),
-            o(
-              TableCell,
-              {
-                key: "status",
-                style: {
-                  borderBottom:
-                    rowIndex === array.length - 1
-                      ? "none"
-                      : "1px solid #27272a",
-                },
-              },
-              [
-                o(
-                  "div",
-                  {
-                    key: "badges",
-                    style: {
-                      display: "flex",
-                      gap: "0.5rem",
-                      flexWrap: "wrap",
-                    },
-                  },
-                  [
-                    version === latestVersion
-                      ? o(
-                          Badge,
-                          {
-                            key: "latest",
-                            variant: "latest",
-                          },
-                          [o("span", { key: "text" }, "Latest")],
-                        )
-                      : null,
-                    details.isDraft
-                      ? o(
-                          Badge,
-                          {
-                            key: "draft",
-                            variant: "draft",
-                          },
-                          [o("span", { key: "text" }, "Draft")],
-                        )
-                      : null,
-                    details.isPrerelease
-                      ? o(
-                          Badge,
-                          {
-                            key: "prerelease",
-                            variant: "prerelease",
-                          },
-                          [o("span", { key: "text" }, "Pre-release")],
-                        )
-                      : null,
-                  ].filter(Boolean),
-                ),
-              ],
-            ),
-            o(
-              TableCell,
-              {
-                key: "platforms",
-                style: {
-                  borderBottom:
-                    rowIndex === array.length - 1
-                      ? "none"
-                      : "1px solid #27272a",
-                },
-              },
-              [
-                o(PlatformCount, {
-                  key: "count",
-                  count: details.platforms.size,
-                }),
-              ],
-            ),
-            o(
-              TableCell,
-              {
-                key: "date",
-                style: {
-                  borderRight: "none",
-                  borderBottom:
-                    rowIndex === array.length - 1
-                      ? "none"
-                      : "1px solid #27272a",
-                },
-              },
-              [o("span", { key: "text" }, formatDate(details.date))],
-            ),
-          ]),
-        ),
-      ],
-    ),
-  ]);
-}
+      return `<tr>
+      <td class="primary"><a href="/versions/${esc(version)}">${esc(version)}</a></td>
+      <td>${badges.join(" ")}</td>
+      <td>${details.platforms.size} platforms</td>
+      <td>${formatDate(details.date)}</td>
+    </tr>`;
+    })
+    .join("");
 
-function DownloadIcon() {
-  return o(
-    "svg",
-    {
-      key: "svg",
-      style: {
-        display: "inline-block",
-        marginRight: "0.5rem",
-        verticalAlign: "middle",
-      },
-      width: 16,
-      height: 12,
-      fill: "currentColor",
-    },
-    [
-      o("path", {
-        key: "path",
-        d: "M0 5h1v7H0V5zm15 0h1v7h-1V5zM7.52941176 0h1v7h-1V0zM4.66999817 4.66673379L5.33673196 4l3.33326621 3.33326621L8.00326438 8 4.66999817 4.66673379zM10.6732625 4l.6667338.66673379L8.00673013 8l-.66673379-.66673379L10.6732625 4zM0 12v-1h16v1H0z",
-      }),
-    ],
-  );
-}
-
-function DownloadCell({
-  asset,
-  id,
-}: {
-  asset: PlatformAssets;
-  id: PlatformIdentifier;
-}) {
-  return o(
-    Link,
-    {
-      href: `/download/${id}`,
-    },
-    [
-      o(DownloadIcon, { key: "icon" }),
-      o("span", { key: "version" }, [asset.version]),
-    ],
-  );
-}
-
-function PlatformName({
-  name,
-  extension,
-}: {
-  name: string;
-  extension: string;
-}) {
-  return o("span", null, [
-    o(
-      "span",
-      {
-        key: "name",
-        style: {
-          color: "hsla(0, 0%, 100%, 1)",
-          fontWeight: 500,
-        },
-      },
-      name,
-    ),
-    " ",
-    o(
-      "span",
-      {
-        key: "extension",
-        style: {
-          color: "hsla(0, 0%, 100%, 0.5)",
-          fontWeight: 400,
-        },
-      },
-      [`(${extension})`],
-    ),
-  ]);
-}
-
-function FormatPlatformName({ filetypeOs }: { filetypeOs: string }) {
-  const platformMap: Record<string, [string, string]> = {
-    "linux-deb": ["Debian", ".deb"],
-    "linux-rpm": ["Fedora", ".rpm"],
-    "linux-appimage": ["Linux", ".AppImage"],
-    "linux-AppImage": ["Linux", ".AppImage"],
-    "linux-snap": ["Linux", ".snap"],
-    "darwin-dmg": ["macOS", ".dmg"],
-    "darwin-zip": ["macOS", ".zip"],
-    "win32-exe": ["Windows", ".exe"],
-    "win32-nupkg": ["Squirrel", ".nupkg"],
-  };
-
-  const [name, extension] = platformMap[filetypeOs] || [filetypeOs, ""];
-  return extension
-    ? o(PlatformName, { key: filetypeOs, name, extension })
-    : o("span", { key: filetypeOs }, name);
-}
-
-function DownloadTable({
-  groupedData,
-  architectures,
-}: {
-  groupedData: Map<
-    string,
-    {
-      id: PlatformIdentifier;
-      arch: NodeJS.Architecture;
-      asset: PlatformAssets;
-    }[]
-  >;
-  architectures: Set<NodeJS.Architecture>;
-}) {
-  return o(Card, null, [
-    o(
-      "table",
-      {
-        key: "table",
-        style: {
-          width: "100%",
-          borderCollapse: "separate",
-          borderSpacing: 0,
-          marginBottom: 0,
-          tableLayout: "fixed",
-        },
-      },
-      [
-        o("tr", { key: "header" }, [
-          o(
-            TableHeader,
-            {
-              key: "empty",
-              style: {
-                borderTop: "none",
-                borderLeft: "none",
-                borderRight: "1px solid #333",
-              },
-            },
-            [o("span", { key: "empty" }, "")],
-          ),
-          ...Array.from(architectures).map((arch, index, array) =>
-            o(
-              TableHeader,
-              {
-                key: arch,
-                style: {
-                  borderTop: "none",
-                  borderRight:
-                    index === array.length - 1 ? "none" : "1px solid #333",
-                },
-              },
-              [o("span", { key: "arch" }, arch)],
-            ),
-          ),
-        ]),
-        ...Array.from(groupedData).map(
-          ([filetypeOs, assets], rowIndex, array) =>
-            o("tr", { key: filetypeOs }, [
-              o(
-                TableCell,
-                {
-                  key: "platform",
-                  style: {
-                    borderLeft: "none",
-                    borderBottom:
-                      rowIndex === array.length - 1 ? "none" : "1px solid #333",
-                  },
-                },
-                [o(FormatPlatformName, { key: filetypeOs, filetypeOs })],
-              ),
-              ...Array.from(architectures).map((arch, colIndex, archArray) => {
-                const asset = assets.find((a) => a.arch === arch);
-                const isLastColumn = colIndex === archArray.length - 1;
-                return o(
-                  TableCell,
-                  {
-                    key: arch,
-                    style: {
-                      borderRight: isLastColumn ? "none" : "1px solid #333",
-                      borderBottom:
-                        rowIndex === array.length - 1
-                          ? "none"
-                          : "1px solid #333",
-                    },
-                  },
-                  [
-                    asset
-                      ? o(DownloadCell, {
-                          key: `${asset.id}-${asset.arch}`,
-                          asset: asset.asset,
-                          id: asset.id,
-                        })
-                      : o("span", { key: "na", style: { opacity: "50%" } }, [
-                          o("span", { key: "text" }, "N/A"),
-                        ]),
-                  ],
-                );
-              }),
-            ]),
-        ),
-      ],
-    ),
-  ]);
-}
-
-function Layout({ children }: { children?: ReactNode }) {
-  return o("html", { lang: "en" }, [
-    o("head", { key: "head" }, [
-      o("meta", { key: "charset", charSet: "utf-8" }),
-      o("meta", {
-        key: "viewport",
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      }),
-      o("link", {
-        key: "fonts",
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap",
-      }),
-    ]),
-    o(
-      "body",
-      {
-        key: "body",
-        style: {
-          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-          margin: 0,
-          background: "hsla(0, 0%, 5%, 1)",
-          color: "hsla(0, 0%, 100%, 1)",
-          fontSize: "0.875rem",
-          lineHeight: 1.5,
-          WebkitFontSmoothing: "antialiased",
-          MozOsxFontSmoothing: "grayscale",
-        },
-      },
-      [
-        o(
-          "main",
-          {
-            key: "main",
-            style: {
-              padding: "2rem 1.5rem",
-              margin: "0 auto",
-              maxWidth: "768px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            },
-          },
-          children ? [o("div", { key: "children" }, children)] : [],
-        ),
-      ],
-    ),
-  ]);
-}
-
-function HomePage({
-  config,
-  releases,
-}: {
-  config: Configuration;
-  releases: Map<PlatformIdentifier, PlatformAssets[]>;
-}) {
-  // Process releases to find latest version
-  const versions = new Map<
-    string,
-    {
-      date: string;
-      platforms: Set<PlatformIdentifier>;
-      isDraft: boolean;
-      isPrerelease: boolean;
-      notes: string;
-    }
-  >();
-  const latestAssets = new Map<PlatformIdentifier, PlatformAssets>();
-
-  for (const [platform, assets] of releases.entries()) {
-    // Find latest stable version
-    if (assets.length > 0) {
-      const stableAssets = assets.filter(
-        (asset) => !asset.isDraft && !asset.isPrerelease,
-      );
-      if (stableAssets.length > 0) {
-        const latestAsset = stableAssets.reduce((latest, current) =>
-          semver.gt(current.version, latest.version) ? current : latest,
-        );
-        latestAssets.set(platform, latestAsset);
-      }
-    }
-
-    // Build versions map for finding latest version
-    for (const asset of assets) {
-      if (!versions.has(asset.version)) {
-        versions.set(asset.version, {
-          date: asset.date,
-          platforms: new Set([platform]),
-          isDraft: asset.isDraft,
-          isPrerelease: asset.isPrerelease,
-          notes: asset.notes || "",
-        });
-      } else {
-        versions.get(asset.version)?.platforms.add(platform);
-      }
-    }
-  }
-
-  // Sort versions by semver
-  const sortedVersions = Array.from(versions.entries()).sort(
-    (a, b) => -a[0].localeCompare(b[0], undefined, { numeric: true }),
-  );
-
-  // Get latest stable version
-  const latestVersion =
-    sortedVersions.find(
-      ([_, details]) => !details.isDraft && !details.isPrerelease,
-    )?.[0] || "";
-
-  // Group data by filetype+OS for the download table
-  const groupedData: Map<
-    `${NodeJS.Platform}-${string}`,
-    {
-      id: PlatformIdentifier;
-      arch: NodeJS.Architecture;
-      asset: PlatformAssets;
-    }[]
-  > = new Map();
-
-  [...latestAssets.entries()].forEach(([id, asset]) => {
-    const key: `${NodeJS.Platform}-${string}` = `${PLATFORMS[id].os}-${PLATFORMS[id].ext}`;
-    if (!groupedData.has(key)) groupedData.set(key, []);
-    groupedData.get(key)?.push({ id, arch: PLATFORMS[id].arch, asset });
-  });
-
-  // Determine available architectures
-  const architectures: Set<NodeJS.Architecture> = new Set();
-  groupedData.forEach((assets) => {
-    assets.forEach((asset) => {
-      if (asset.arch) architectures.add(asset.arch);
-    });
-  });
-
-  return o(Layout, null, [
-    o("div", { key: "header" }, [
-      o(Header, { key: "title" }, [`${config.account}/${config.repository}`]),
-      o(SubHeader, { key: "subtitle" }, [
-        o("span", { key: "label" }, "Latest Version "),
-        o("span", { key: "version", style: { opacity: "50%" } }, [
-          `(${latestVersion})`,
-        ]),
-      ]),
-    ]),
-    o(DownloadTable, { key: "downloads", groupedData, architectures }),
-    !config.hideVersions &&
-      o(
-        "div",
-        {
-          key: "footer",
-          style: {
-            marginTop: "2rem",
-            textAlign: "center",
-          },
-        },
-        [o(Link, { key: "link", href: "/versions" }, ["View all versions →"])],
-      ),
-  ]);
-}
-
-function VersionsPage({
-  config,
-  releases,
-}: {
-  config: Configuration;
-  releases: Map<PlatformIdentifier, PlatformAssets[]>;
-}) {
-  // Process releases into versions map
-  const versions = new Map<
-    string,
-    {
-      date: string;
-      platforms: Set<PlatformIdentifier>;
-      isDraft: boolean;
-      isPrerelease: boolean;
-      notes: string;
-    }
-  >();
-
-  for (const [platform, assets] of releases.entries()) {
-    // Build versions map
-    for (const asset of assets) {
-      if (!versions.has(asset.version)) {
-        versions.set(asset.version, {
-          date: asset.date,
-          platforms: new Set([platform]),
-          isDraft: asset.isDraft,
-          isPrerelease: asset.isPrerelease,
-          notes: asset.notes || "",
-        });
-      } else {
-        versions.get(asset.version)?.platforms.add(platform);
-      }
-    }
-  }
-
-  // Sort versions by semver
-  const sortedVersions = Array.from(versions.entries()).sort(
-    (a, b) => -a[0].localeCompare(b[0], undefined, { numeric: true }),
-  );
-
-  return o(Layout, null, [
-    o("div", { key: "header" }, [
-      o("p", { key: "back" }, [
-        o(Link, { key: "link", href: "/" }, ["← Back to latest version"]),
-      ]),
-      o(Header, { key: "title" }, [
-        o("span", { key: "repo" }, `${config.account}/${config.repository}`),
-      ]),
-      o(SubHeader, { key: "subtitle" }, [
-        o("span", { key: "label" }, "All Versions"),
-      ]),
-    ]),
-    o(VersionListTable, { key: "versions", versions: sortedVersions }),
-  ]);
-}
-
-function VersionPage({
-  config,
-  version,
-  assets,
-}: {
-  config: Configuration;
-  version: string;
-  assets: Map<PlatformIdentifier, PlatformAssets>;
-}) {
-  // Group data by filetype+OS
-  const groupedData: Map<
-    `${NodeJS.Platform}-${string}`,
-    {
-      id: PlatformIdentifier;
-      arch: NodeJS.Architecture;
-      asset: PlatformAssets;
-    }[]
-  > = new Map();
-
-  // Get release notes from any asset (they should all be the same for a version)
-  const releaseNotes = Array.from(assets.values())[0]?.notes || "";
-
-  [...assets.entries()].forEach(([id, asset]) => {
-    const key: `${NodeJS.Platform}-${string}` = `${PLATFORMS[id].os}-${PLATFORMS[id].ext}`;
-    if (!groupedData.has(key)) groupedData.set(key, []);
-    groupedData.get(key)?.push({ id, arch: PLATFORMS[id].arch, asset });
-  });
-
-  // Determine available architectures
-  const architectures: Set<NodeJS.Architecture> = new Set();
-  groupedData.forEach((assets) => {
-    assets.forEach((asset) => {
-      if (asset.arch) architectures.add(asset.arch);
-    });
-  });
-
-  return o(Layout, null, [
-    o("div", { key: "header" }, [
-      o("p", { key: "back" }, [
-        o(Link, { key: "link", href: "/versions" }, "← Back to all versions"),
-      ]),
-      o(Header, { key: "title" }, [`${config.account}/${config.repository}`]),
-      o(SubHeader, { key: "subtitle" }, [
-        o("span", { key: "version" }, `Version ${version}`),
-      ]),
-    ]),
-    o(DownloadTable, { key: "table", groupedData, architectures }),
-    releaseNotes &&
-      o(
-        "div",
-        {
-          key: "notes",
-          style: {
-            background: "hsla(0, 0%, 10%, 1)",
-            border: "1px solid hsla(0, 0%, 30%, 1)",
-            borderRadius: "0.5rem",
-            padding: "1.5rem",
-            marginTop: "2rem",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            fontSize: "0.875rem",
-            lineHeight: 1.5,
-            color: "hsla(0, 0%, 95%, 1)",
-            overflow: "auto",
-          },
-        },
-        releaseNotes,
-      ),
-  ]);
+  return `<div class="card"><table>
+    <tr><th>Version</th><th>Status</th><th>Platforms</th><th>Date</th></tr>
+    ${rows}
+  </table></div>`;
 }
 
 export function renderHomePage(
   config: Configuration,
   releases: Map<PlatformIdentifier, PlatformAssets[]>,
 ) {
-  return renderToString(o(HomePage, { config, releases }));
+  // Find latest stable for each platform
+  const latestAssets = new Map<PlatformIdentifier, PlatformAssets>();
+  const versions = new Map<
+    string,
+    {
+      date: string;
+      platforms: Set<PlatformIdentifier>;
+      isDraft: boolean;
+      isPrerelease: boolean;
+    }
+  >();
+
+  for (const [platform, assets] of releases) {
+    const stable = assets.filter((a) => !a.isDraft && !a.isPrerelease);
+    if (stable.length) {
+      const latest = stable.reduce((a, b) => (a.version > b.version ? a : b));
+      latestAssets.set(platform, latest);
+    }
+    for (const asset of assets) {
+      if (!versions.has(asset.version)) {
+        versions.set(asset.version, {
+          date: asset.date,
+          platforms: new Set([platform]),
+          isDraft: asset.isDraft,
+          isPrerelease: asset.isPrerelease,
+        });
+      } else {
+        versions.get(asset.version)!.platforms.add(platform);
+      }
+    }
+  }
+
+  const sortedVersions = Array.from(versions).sort((a, b) =>
+    b[0].localeCompare(a[0], undefined, { numeric: true }),
+  );
+  const latestVersion =
+    sortedVersions.find(([_, d]) => !d.isDraft && !d.isPrerelease)?.[0] || "";
+
+  const footer = config.hideVersions
+    ? ""
+    : `<p class="center"><a href="/versions">View all versions →</a></p>`;
+
+  return layout(`
+    <h1>${esc(config.account)}/${esc(config.repository)}</h1>
+    <h2>Latest Version <span class="muted">(${esc(latestVersion)})</span></h2>
+    ${downloadTable(latestAssets)}
+    ${footer}
+  `);
 }
 
 export function renderVersionsPage(
   config: Configuration,
   releases: Map<PlatformIdentifier, PlatformAssets[]>,
 ) {
-  return renderToString(o(VersionsPage, { config, releases }));
+  const versions = new Map<
+    string,
+    {
+      date: string;
+      platforms: Set<PlatformIdentifier>;
+      isDraft: boolean;
+      isPrerelease: boolean;
+    }
+  >();
+
+  for (const [platform, assets] of releases) {
+    for (const asset of assets) {
+      if (!versions.has(asset.version)) {
+        versions.set(asset.version, {
+          date: asset.date,
+          platforms: new Set([platform]),
+          isDraft: asset.isDraft,
+          isPrerelease: asset.isPrerelease,
+        });
+      } else {
+        versions.get(asset.version)!.platforms.add(platform);
+      }
+    }
+  }
+
+  const sortedVersions = Array.from(versions).sort((a, b) =>
+    b[0].localeCompare(a[0], undefined, { numeric: true }),
+  );
+  const latestVersion =
+    sortedVersions.find(([_, d]) => !d.isDraft && !d.isPrerelease)?.[0] || "";
+
+  return layout(`
+    <p><a href="/">← Back to latest version</a></p>
+    <h1>${esc(config.account)}/${esc(config.repository)}</h1>
+    <h2>All Versions</h2>
+    ${versionTable(sortedVersions, latestVersion)}
+  `);
 }
 
 export function renderVersionPage(
@@ -926,5 +256,14 @@ export function renderVersionPage(
   version: string,
   assets: Map<PlatformIdentifier, PlatformAssets>,
 ) {
-  return renderToString(o(VersionPage, { config, version, assets }));
+  const notes = Array.from(assets.values())[0]?.notes || "";
+  const notesHtml = notes ? `<div class="notes">${esc(notes)}</div>` : "";
+
+  return layout(`
+    <p><a href="/versions">← Back to all versions</a></p>
+    <h1>${esc(config.account)}/${esc(config.repository)}</h1>
+    <h2>Version ${esc(version)}</h2>
+    ${downloadTable(assets)}
+    ${notesHtml}
+  `);
 }

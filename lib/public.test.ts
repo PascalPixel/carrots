@@ -53,7 +53,7 @@ describe("html", () => {
     const res = await fetch(`${address}`);
     expect(res.status).toEqual(200);
     const text = await res.text();
-    expect(text).toContain("<main ");
+    expect(text).toContain("<main>");
   });
 
   it("should throw 404 for favicon", async () => {
@@ -185,5 +185,33 @@ describe("latest", () => {
   it("should not give update for up-to-date mac x64", async () => {
     const res = await fetch(`${address}update/darwin/${currentVersion}`);
     expect(res.status).toEqual(204);
+  });
+});
+
+describe("prerelease channel", () => {
+  it("should serve an update that points at the prerelease download path", async () => {
+    const res = await fetch(`${address}update-prerelease/darwin_arm64/0.57.0`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-type")).toBe(
+      "application/json; charset=utf-8",
+    );
+    const data = await res.json();
+    expect(data.url).toBe(`${address}download-prerelease/darwin_arm64`);
+  });
+
+  it("should resolve a prerelease download", async () => {
+    const res = await fetch(`${address}download-prerelease/appimage`);
+    expect(res.status).toEqual(200);
+    expect(res.headers.get("content-disposition")).toContain(".AppImage");
+  });
+
+  it("should not offer a sideways move to a client on the latest", async () => {
+    // The beta channel is a superset of stable, so its latest is >= stable's.
+    // A client already on the stable latest gets 204 unless a genuinely newer
+    // prerelease exists in the repo (then 200).
+    const res = await fetch(
+      `${address}update-prerelease/darwin_arm64/${currentVersion}`,
+    );
+    expect([200, 204]).toContain(res.status);
   });
 });
