@@ -52,13 +52,22 @@ export interface PlatformAssets {
 // Cache
 const CACHE_DURATION = 1000 * 60 * 5;
 let cache: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
+let backupCache: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
 let cacheTime = 0;
 
 async function getCache(config: Configuration) {
   const now = Date.now();
   if (!cache || now - cacheTime > CACHE_DURATION) {
-    cache = await fetchAllReleases(config);
-    cacheTime = now;
+    const fetched = await fetchAllReleases(config);
+    if (fetched) {
+      cache = fetched;
+      backupCache = fetched;
+      cacheTime = now;
+    } else if (backupCache) {
+      // Failed refresh: serve last-known-good without advancing cacheTime,
+      // so a transient GitHub 403/5xx keeps a warm server serving.
+      cache = backupCache;
+    }
   }
   return cache;
 }
@@ -152,7 +161,11 @@ async function fetchAllReleases(
     }),
   );
 
-  for (const release of releases) {
+  // Iterate oldest-first so cache key-insertion order matches the original
+  // server, keeping /api/latest + /api/semver's scalar stable for repos that
+  // diverge per platform.
+  for (let i = releases.length - 1; i >= 0; i--) {
+    const release = releases[i];
     if (!semver.valid(release.tag_name)) continue;
 
     for (const asset of release.assets) {
@@ -192,7 +205,15 @@ async function fetchAllReleases(
 export type Channel = "stable" | "prerelease";
 
 async function getLatest(config: Configuration, channel: Channel = "stable") {
-  const releases = await getCache(config);
+  let releases: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
+  try {
+    releases = await getCache(config);
+  } catch (e) {
+    // A network-level fetch rejection (DNS / ECONNRESET) must degrade to a
+    // clean 500 instead of an unhandled rejection that hangs the socket.
+    console.error(e);
+    releases = null;
+  }
   if (!releases) return { latest: null, platforms: [], version: "", date: "" };
 
   const latest = new Map<PlatformIdentifier, PlatformAssets>();
@@ -403,7 +424,8 @@ export async function carrots(config: Configuration) {
   );
 
   router.get("/api/semver", async (req, res) => {
-    const { version } = await getLatest(config);
+    const { latest, version } = await getLatest(config);
+    if (!latest) return end(res, 500, "Failed to fetch latest releases");
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.end(JSON.stringify({ version }));

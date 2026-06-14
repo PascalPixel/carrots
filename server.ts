@@ -2,6 +2,9 @@ import "dotenv/config";
 import http from "http";
 import { carrots } from "./lib/index.js";
 
+// Never let a stray rejection kill the long-running process.
+process.on("unhandledRejection", (e) => console.error(e));
+
 if (!process.env.ACCOUNT) throw new Error("Missing ACCOUNT");
 if (!process.env.REPOSITORY) throw new Error("Missing REPOSITORY");
 
