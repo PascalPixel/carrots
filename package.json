@@ -11,28 +11,26 @@
     "start": "tsx server.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "prettier --config .prettierrc.json -c ./**/*.ts && eslint --config .eslintrc.json ./**/*.ts && tsc --noEmit",
+    "lint": "prettier --config .prettierrc.json -c ./**/*.ts && eslint . && tsc --noEmit",
     "format": "prettier --config .prettierrc.json -w ./**/*.ts"
   },
   "dependencies": {
-    "dotenv": "^17.2.3",
-    "find-my-way": "^9.4.0",
-    "react": "^19",
-    "react-dom": "^19",
-    "semver": "^7.7.3"
+    "dotenv": "^17.4.2",
+    "find-my-way": "^9.6.0",
+    "semver": "^7.8.4"
   },
   "devDependencies": {
-    "@types/node": "^25.0.10",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.3",
     "@types/semver": "^7.7.1",
-    "@typescript-eslint/eslint-plugin": "^8.53.1",
-    "@typescript-eslint/parser": "^8.53.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.0",
+    "@typescript-eslint/parser": "^8.61.0",
     "async-listen": "^3.1.0",
-    "eslint": "^9",
-    "prettier": "^3.8.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "eslint": "^10.5.0",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }
