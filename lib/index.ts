@@ -205,15 +205,12 @@ async function fetchAllReleases(
 export type Channel = "stable" | "prerelease";
 
 async function getLatest(config: Configuration, channel: Channel = "stable") {
-  let releases: Map<PlatformIdentifier, PlatformAssets[]> | null = null;
-  try {
-    releases = await getCache(config);
-  } catch (e) {
-    // A network-level fetch rejection (DNS / ECONNRESET) must degrade to a
-    // clean 500 instead of an unhandled rejection that hangs the socket.
+  // A network-level fetch rejection (DNS / ECONNRESET) must degrade to a
+  // clean 500 instead of an unhandled rejection that hangs the socket.
+  const releases = await getCache(config).catch((e) => {
     console.error(e);
-    releases = null;
-  }
+    return null;
+  });
   if (!releases) return { latest: null, platforms: [], version: "", date: "" };
 
   const latest = new Map<PlatformIdentifier, PlatformAssets>();
